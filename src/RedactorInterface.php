@@ -42,7 +42,7 @@ interface RedactorInterface
 
     public function getOnLimitExceededCallback(): ?callable;
 
-    public function setOverflowPlaceholder(mixed $value): RedactorInterface;
+    public function setOverflowPlaceholder(?string $value): RedactorInterface;
 
-    public function getOverflowPlaceholder(): mixed;
+    public function getOverflowPlaceholder(): ?string;
 }

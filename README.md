@@ -1,11 +1,12 @@
 # Redaction
 
-A PHP library for data redaction, masking, and sanitization with optional Monolog integration.
+A PHP library for data redaction, masking, and sanitization with optional Monolog and Mezzio/Laminas integration.
 
-This library provides a small core that can redact sensitive data in arrays, objects, and iterables using pluggable rules. You can use it anywhere in your app (HTTP payloads, DTOs, database debug dumps, etc.), and—optionally—plug it into Monolog via a tiny bridge.
+This library provides a small core that can redact sensitive data in arrays, objects, and iterables using pluggable rules. You can use it anywhere in your app (HTTP payloads, DTOs, database debug dumps, etc.), and—optionally—plug it into Monolog via a tiny bridge. For framework users, a PSR‑11 factory and a Mezzio/Laminas ConfigProvider are included.
 
 - PHP 8.1–8.4
 - Optional: Monolog ^3.0 (for the bridge only)
+- Optional: Mezzio/Laminas (for auto‑wiring via ConfigProvider)
 - License: MIT
 
 ## Installation
@@ -14,12 +15,6 @@ Install the core library:
 
 ```bash
 composer require sirix/redaction
-```
-
-If you want to use Monolog integration, also require Monolog (if you don't have it already):
-
-```bash
-composer require monolog/monolog
 ```
 
 ## Quick start (core library)
@@ -117,6 +112,67 @@ Example output (stdout):
 ```
 
 Note: Exact output format depends on your handler/formatter. The masking shown reflects the default rules plus the ones configured above.
+
+## Framework/DI integration (Mezzio/Laminas, PSR‑11)
+
+This package ships with:
+
+- A PSR‑11 factory: `Sirix\Redaction\Factory\RedactorFactory`
+- A Mezzio/Laminas config provider: `Sirix\Redaction\Bridge\Mezzio\ConfigProvider`
+
+With Laminas/Mezzio, you can wire the service automatically via the ConfigProvider. Add the provider to your application config if not discovered automatically:
+
+```php
+// config/config.php or a module config
+return [
+    'dependencies' => [
+        // You can omit this if you use the provided ConfigProvider
+        'aliases' => [
+            Sirix\Redaction\RedactorInterface::class => Sirix\Redaction\Redactor::class,
+        ],
+        'factories' => [
+            Sirix\Redaction\Redactor::class => Sirix\Redaction\Factory\RedactorFactory::class,
+        ],
+    ],
+
+    // Redactor configuration
+    'redactor' => [
+        'options' => [
+            // Custom rules (same structure as passing to the constructor)
+            'rules' => [
+                'card_number' => new Sirix\Redaction\Rule\StartEndRule(6, 4),
+            ],
+
+            // Whether to load built‑in default rules (bool, default: true)
+            'use_default_rules' => true,
+
+            // Core options mirrored from setters (all optional)
+            'replacement' => '*',                 // string
+            'template' => '%s',                   // string
+            'length_limit' => null,               // int|null
+            'object_view_mode' => Sirix\Redaction\Enum\ObjectViewModeEnum::Copy,
+            'max_depth' => null,                  // int|null
+            'max_items_per_container' => null,    // int|null
+            'max_total_nodes' => null,            // int|null
+            'on_limit_exceeded_callback' => null, // callable|null
+            'overflow_placeholder' => '...',      // string
+        ],
+    ],
+];
+```
+
+Then type‑hint `RedactorInterface` in your services/controllers, and let the container inject it:
+
+```php
+use Sirix\Redaction\RedactorInterface;
+
+final class MyService
+{
+    public function __construct(private RedactorInterface $redactor) {}
+}
+```
+
+If you are not using Mezzio/Laminas, register the factory in your PSR‑11 container of choice, passing the `redactor.options` structure as shown above.
 
 ## How it works
 

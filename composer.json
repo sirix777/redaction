@@ -6,16 +6,22 @@
   "keywords": [
     "php",
     "monolog",
+    "monolog-processor",
+    "psr-3",
     "log",
     "logging",
     "redaction",
     "masking",
+    "data-masking",
     "anonymization",
+    "sanitization",
     "privacy",
     "pii",
     "gdpr",
     "data-protection",
-    "security"
+    "security",
+    "mezzio",
+    "laminas"
   ],
   "require": {
     "php": "~8.1.0 || ~8.2.0 || ~8.3.0 || ~8.4.0"
@@ -23,10 +29,12 @@
   "require-dev": {
     "bamarni/composer-bin-plugin": "^1.8.2",
     "monolog/monolog": "^3.9",
-    "phpunit/phpunit": "^10.5.58"
+    "phpunit/phpunit": "^10.5.58",
+    "psr/container": "^1.0 || ^2.0"
   },
   "suggest": {
-    "monolog/monolog": "To use Monolog processor integration."
+    "monolog/monolog": "Install to enable Monolog processor integration for automatic redaction in logs.",
+    "mezzio/mezzio": "Install to use the Mezzio integration provider and DI factories (ConfigProvider)."
   },
   "autoload": {
     "psr-4": {
@@ -50,6 +58,9 @@
       "bin-links": false,
       "forward-command": true,
       "target-directory": "tools"
+    },
+    "laminas": {
+      "config-provider": "Sirix\\Redaction\\Bridge\\Mezzio\\ConfigProvider"
     }
   },
   "scripts": {

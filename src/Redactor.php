@@ -40,7 +40,7 @@ final class Redactor implements RedactorInterface
      * @var null|callable
      */
     private $onLimitExceededCallback;
-    private mixed $overflowPlaceholder = null;
+    private ?string $overflowPlaceholder = null;
     private int $currentDepth = 0;
     private int $nodesVisited = 0;
 
@@ -175,14 +175,14 @@ final class Redactor implements RedactorInterface
         return $this->onLimitExceededCallback;
     }
 
-    public function setOverflowPlaceholder(mixed $value): RedactorInterface
+    public function setOverflowPlaceholder(?string $value): RedactorInterface
     {
         $this->overflowPlaceholder = $value;
 
         return $this;
     }
 
-    public function getOverflowPlaceholder(): mixed
+    public function getOverflowPlaceholder(): ?string
     {
         return $this->overflowPlaceholder;
     }
