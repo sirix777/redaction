@@ -46,11 +46,7 @@ final class NameRuleTest extends TestCase
         $rule = new NameRule();
         $redactor = (new Redactor(
             [
-                'user' => [
-                    'profile' => [
-                        'name' => $rule,
-                    ],
-                ],
+                'name' => $rule,
             ],
             false
         ))

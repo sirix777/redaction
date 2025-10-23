@@ -37,11 +37,7 @@ final class EmailRuleTest extends TestCase
         $rule = new EmailRule();
         $redactor = (new Redactor(
             [
-                'user' => [
-                    'contact' => [
-                        'email' => $rule,
-                    ],
-                ],
+                'email' => $rule,
             ],
             false
         ))

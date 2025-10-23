@@ -28,10 +28,8 @@ final class OffsetRuleTest extends TestCase
     {
         $redactor = (new Redactor(
             [
-                'user' => [
-                    'password' => new OffsetRule(2),
-                    'token' => new OffsetRule(4),
-                ],
+                'password' => new OffsetRule(2),
+                'token' => new OffsetRule(4),
             ],
             false
         ))

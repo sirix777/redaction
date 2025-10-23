@@ -27,10 +27,8 @@ final class NullRuleTest extends TestCase
     {
         $redactor = (new Redactor(
             [
-                'credentials' => [
-                    'apiKey' => new NullRule(),
-                    'username' => new NullRule(),
-                ],
+                'apiKey' => new NullRule(),
+                'username' => new NullRule(),
             ],
             false
         ))

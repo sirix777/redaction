@@ -33,7 +33,6 @@ final class RedactorObjectReflectionTest extends TestCase
         $this->assertNotSame($user, $result['user'], 'Should be a cloned instance');
         $this->assertSame('my****', $result['user']->password);
         $this->assertSame('carol', $result['user']->username);
-        // Original is not mutated
         $this->assertSame('mypass', $user->password);
         $this->assertSame('carol', $user->username);
     }
@@ -46,9 +45,7 @@ final class RedactorObjectReflectionTest extends TestCase
 
         $redactor = (new Redactor(
             [
-                'user' => [
-                    'password' => new OffsetRule(3),
-                ],
+                'password' => new OffsetRule(3),
             ],
             false
         ))
@@ -59,7 +56,6 @@ final class RedactorObjectReflectionTest extends TestCase
 
         $this->assertSame('sec***', $result['user']->password);
         $this->assertSame('dave', $result['user']->username);
-        // Original remains unchanged
         $this->assertSame('secr3t', $user->password);
     }
 
@@ -76,7 +72,6 @@ final class RedactorObjectReflectionTest extends TestCase
         $result = $redactor->redact(['obj' => $obj]);
 
         $this->assertIsObject($result['obj']);
-        // Original remains unchanged
         $this->assertSame('topsecret', $obj->secret);
         $this->assertSame('to*******', $result['obj']->secret);
     }
@@ -107,13 +102,10 @@ final class RedactorObjectReflectionTest extends TestCase
         $result = $redactor->redact(['user' => $user]);
         $processed = $result['user'];
 
-        // Check processed clone values via accessors
         $this->assertSame('priv****', $processed->password);
         $this->assertSame('tok***', $processed->token);
-        // Original remains unchanged
         $this->assertSame('privpass', $user->getPassword());
         $this->assertSame('tok123', $user->getToken());
-        // Ensure instance was cloned, not the same object
         $this->assertNotSame($user, $processed);
     }
 }

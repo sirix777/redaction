@@ -50,13 +50,17 @@ final class Redactor implements RedactorInterface
     private ?SplObjectStorage $seenObjects = null;
 
     /**
-     * @param array<string, array<string, mixed>|RedactionRuleInterface> $customRules
+     * @param array<string, mixed> $customRules
      */
     public function __construct(array $customRules = [], bool $useDefaultRules = true)
     {
         $this->rules = $useDefaultRules ? $this->loadDefaultRules() : [];
         foreach ($customRules as $key => $rule) {
-            $this->rules[$key] = $this->validateRule($rule);
+            if (! $rule instanceof RedactionRuleInterface) {
+                throw new InvalidArgumentException('All sensitive keys must be instances of RedactionRuleInterface');
+            }
+            // Custom rules override defaults if keys overlap
+            $this->rules[$key] = $rule;
         }
     }
 
@@ -308,7 +312,7 @@ final class Redactor implements RedactorInterface
      */
     private function processObjectAsArray(object $object, array $rules): array
     {
-        $arr = [];
+        $redactedData = [];
         $count = 0;
 
         foreach (get_object_vars($object) as $name => $propValue) {
@@ -317,15 +321,15 @@ final class Redactor implements RedactorInterface
             }
 
             if ($this->hitNodeLimit('object_property', $name)) {
-                $arr[$name] = $this->overflowPlaceholder ?? $propValue;
+                $redactedData[$name] = $this->overflowPlaceholder ?? $propValue;
 
                 continue;
             }
 
-            $arr[$name] = $this->maskValue($name, $propValue, $rules);
+            $redactedData[$name] = $this->maskValue($name, $propValue, $rules);
         }
 
-        return $arr;
+        return $redactedData;
     }
 
     /**
@@ -384,84 +388,15 @@ final class Redactor implements RedactorInterface
      */
     private function maskValue(string $key, mixed $value, array $rules): mixed
     {
-        if (is_scalar($value)) {
-            return $this->maskScalar($key, $value, $rules);
+        if (is_scalar($value) && isset($rules[$key]) && $rules[$key] instanceof RedactionRuleInterface) {
+            return $rules[$key]->apply((string) $value, $this);
         }
 
-        if (is_array($value)) {
-            return $this->maskArray($key, $value, $rules);
-        }
-
-        if (is_object($value)) {
-            return $this->maskObject($key, $value, $rules);
+        if (is_array($value) || (is_object($value) && $this->shouldProcessObject($value))) {
+            $this->processValue($value, $rules);
         }
 
         return $value;
-    }
-
-    /**
-     * @param array<string, array<string, mixed>|RedactionRuleInterface> $rules
-     */
-    private function maskScalar(string $key, mixed $value, array $rules): mixed
-    {
-        return $this->applyRulesIfScalar($key, $value, $rules);
-    }
-
-    /**
-     * @param array<string, mixed>                                       $value
-     * @param array<string, array<string, mixed>|RedactionRuleInterface> $rules
-     *
-     * @return array<string, mixed>
-     */
-    private function maskArray(string $key, array $value, array $rules): array
-    {
-        $subRules = $rules[$key] ?? [];
-        $this->processContainer($value, is_array($subRules) ? $subRules : []);
-
-        return $value;
-    }
-
-    /**
-     * @param array<string, array<string, mixed>|RedactionRuleInterface> $rules
-     */
-    private function maskObject(string $key, object $value, array $rules): mixed
-    {
-        $subRules = $rules[$key] ?? [];
-        $obj = ObjectViewModeEnum::Copy === $this->objectViewMode ? clone $value : $value;
-
-        if ($this->seenObjects?->contains($value)) {
-            $this->onLimit('cycle', ['class' => get_debug_type($value)]);
-
-            return $this->overflowPlaceholder ?? $value;
-        }
-
-        if ($this->hitNodeLimit('node', $key)) {
-            return $this->overflowPlaceholder ?? $value;
-        }
-
-        $this->processValue($obj, is_array($subRules) ? $subRules : []);
-
-        return $obj;
-    }
-
-    /**
-     * @param array<string, array<string, mixed>|RedactionRuleInterface> $rules
-     */
-    private function hasRuleFor(string $key, array $rules): bool
-    {
-        return isset($rules[$key]) && $rules[$key] instanceof RedactionRuleInterface;
-    }
-
-    /**
-     * @param array<string, array<string, mixed>|RedactionRuleInterface> $rules
-     */
-    private function applyRule(string $key, mixed $value, array $rules): mixed
-    {
-        $rule = $rules[$key];
-
-        return $rule instanceof RedactionRuleInterface && is_scalar($value)
-            ? $rule->apply((string) $value, $this)
-            : $value;
     }
 
     private function shouldStopForDepth(): bool
@@ -526,52 +461,19 @@ final class Redactor implements RedactorInterface
             return;
         }
 
-        $ruleOrRules = $rules[$key] ?? null;
-
-        if ($ruleOrRules instanceof RedactionRuleInterface) {
-            match (true) {
-                is_scalar($item) => $item = $ruleOrRules->apply((string) $item, $this),
-                is_object($item) => $item = $this->maskObject((string) $key, $item, [(string) $key => $ruleOrRules]),
-                is_array($item) => $this->processContainer($item, [(string) $key => $ruleOrRules]),
-                default => null,
-            };
+        if (is_scalar($item) && isset($rules[$key]) && $rules[$key] instanceof RedactionRuleInterface) {
+            $item = $rules[$key]->apply((string) $item, $this);
 
             return;
         }
 
-        if (! is_array($item) && ! is_object($item)) {
-            return;
+        if (is_array($item) || is_object($item)) {
+            $this->processValue($item, $rules);
         }
-
-        $this->processValue($item, is_array($ruleOrRules) ? $ruleOrRules : $rules);
     }
 
     /**
-     * @param array<string, array<string, mixed>|RedactionRuleInterface> $localRules
-     */
-    private function applyRulesIfScalar(string $key, mixed $value, array $localRules): mixed
-    {
-        return match (true) {
-            $this->hasRuleFor($key, $localRules) => $this->applyRule($key, $value, $localRules),
-            $this->hasRuleFor($key, $this->rules) => $this->applyRule($key, $value, $this->rules),
-            default => $value,
-        };
-    }
-
-    /**
-     * @return array<string, array<string, mixed>|RedactionRuleInterface>|RedactionRuleInterface
-     */
-    private function validateRule(mixed $rule): array|RedactionRuleInterface
-    {
-        if (! ($rule instanceof RedactionRuleInterface) && ! is_array($rule)) {
-            throw new InvalidArgumentException('All sensitive keys must be RedactionRule or nested array');
-        }
-
-        return $rule;
-    }
-
-    /**
-     * @return array<string, array<string, mixed>|RedactionRuleInterface>
+     * @return array<string, RedactionRuleInterface>
      */
     private function loadDefaultRules(): array
     {

@@ -46,11 +46,7 @@ final class PhoneRuleTest extends TestCase
         $rule = new PhoneRule();
         $redactor = (new Redactor(
             [
-                'user' => [
-                    'contact' => [
-                        'phone' => $rule,
-                    ],
-                ],
+                'phone' => $rule,
             ],
             false
         ))

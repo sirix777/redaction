@@ -4,121 +4,181 @@ declare(strict_types=1);
 
 namespace Sirix\Redaction\Rule\Default;
 
-use Sirix\Redaction\Rule\EmailRule;
-use Sirix\Redaction\Rule\FixedValueRule;
-use Sirix\Redaction\Rule\FullMaskRule;
-use Sirix\Redaction\Rule\NameRule;
-use Sirix\Redaction\Rule\NullRule;
-use Sirix\Redaction\Rule\PhoneRule;
+use Sirix\Redaction\Rule\Factory\SharedRuleFactory;
 use Sirix\Redaction\Rule\RedactionRuleInterface;
-use Sirix\Redaction\Rule\StartEndRule;
 
 /**
- * Factory class for generating default redaction rules.
+ * Factory class for generating default redaction rules with lazy initialization.
  */
 final class DefaultRules
 {
     /**
-     * Get all default redaction rules.
-     *
+     * @var null|array<string, RedactionRuleInterface>
+     */
+    private static ?array $cachedRules = null;
+
+    /**
      * @return array<string, RedactionRuleInterface>
      */
     public static function getAll(): array
     {
+        if (null === self::$cachedRules) {
+            self::$cachedRules = self::createRules();
+        }
+
+        return self::$cachedRules;
+    }
+
+    public static function clearCache(): void
+    {
+        self::$cachedRules = null;
+    }
+
+    /**
+     * @return array<string, RedactionRuleInterface>
+     */
+    private static function createRules(): array
+    {
+        $rules = [
+            'cardNumber' => SharedRuleFactory::startEnd(6, 4),
+            'fullMask' => SharedRuleFactory::fullMask(),
+            'fixedStar' => SharedRuleFactory::fixedValue('*'),
+            'null' => SharedRuleFactory::null(),
+            'name' => SharedRuleFactory::name(),
+            'phone' => SharedRuleFactory::phone(),
+            'email' => SharedRuleFactory::email(),
+            'expiryDate' => SharedRuleFactory::fixedValue('**/****'),
+        ];
+        $groups = self::getGroups();
+
+        // --- Flatten to key => rule map ---
+        $result = [];
+        foreach ($groups as $ruleKey => $keys) {
+            $rule = $rules[$ruleKey];
+            foreach ($keys as $key) {
+                $result[$key] = $rule;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @return array<string, list<string>>
+     */
+    private static function getGroups(): array
+    {
+        // --- Rule groups (by logical type) ---
         return [
-            // Credit card/PAN rules
-            'card_number' => new StartEndRule(6, 4),
-            'pan' => new StartEndRule(6, 4),
-            'acctNumber' => new StartEndRule(6, 4),
-            'customeraccountnumber' => new StartEndRule(6, 4),
-            'destination' => new StartEndRule(6, 4),
-            'cardNum' => new StartEndRule(6, 4),
+            // Credit card / PAN
+            'cardNumber' => [
+                'card_number',
+                'pan',
+                'acctNumber',
+                'customeraccountnumber',
+                'destination',
+                'cardNum',
+            ],
 
-            // Security code/CVV rules
-            'security_code' => new FullMaskRule(),
-            'cvv' => new FullMaskRule(),
-            'securitycode' => new FullMaskRule(),
-            'card_cvv' => new FullMaskRule(),
-            'exp_month' => new FullMaskRule(),
-            'exp_year' => new FullMaskRule(),
-            'expiration_month' => new FullMaskRule(),
-            'expiration_year' => new FullMaskRule(),
-            'cardExpiryDate' => new FullMaskRule(),
-            'acquirerBIN' => new FullMaskRule(),
-            'ccExpMonth' => new FullMaskRule(),
-            'ccExpYear' => new FullMaskRule(),
-            'month' => new FullMaskRule(),
-            'year' => new FullMaskRule(),
+            // CVV / security
+            'fullMask' => [
+                'security_code',
+                'cvv',
+                'securitycode',
+                'card_cvv',
+                'exp_month',
+                'exp_year',
+                'expiration_month',
+                'expiration_year',
+                'cardExpiryDate',
+                'acquirerBIN',
+                'ccExpMonth',
+                'ccExpYear',
+                'month',
+                'year',
+            ],
 
-            // Date format rules
-            'expirydate' => new FixedValueRule('**/****'),
+            // Expiry date
+            'expiryDate' => [
+                'expirydate',
+            ],
 
-            // Authentication and sensitive values
-            'cavv' => new FixedValueRule('*'),
-            'threeddirectorytransactionreference' => new FixedValueRule('*'),
-            'authenticationValue' => new FixedValueRule('*'),
-            'dsTransID' => new FixedValueRule('*'),
-            'sitereference' => new FixedValueRule('*'),
-            'address' => new FixedValueRule('*'),
-            'street' => new FixedValueRule('*'),
-            'zip' => new FixedValueRule('*'),
-            'ip' => new FixedValueRule('*'),
-            'browser_ip' => new FixedValueRule('*'),
-            'customerIp' => new FixedValueRule('*'),
-            'password' => new FixedValueRule('*'),
-            'auth' => new FixedValueRule('*'),
-            'accessor' => new FixedValueRule('*'),
-            'payload' => new FixedValueRule('*'),
-            'paymentHandleToken' => new FixedValueRule('*'),
-            'ciphertext' => new FixedValueRule('*'),
-            'threeDSSessionData' => new FixedValueRule('*'),
-            'creq' => new FixedValueRule('*'),
-            'form3d_html' => new FixedValueRule('*'),
-            'auth_code' => new FixedValueRule('*'),
-            'dsReferenceNumber' => new FixedValueRule('*'),
-            'Signature' => new FixedValueRule('*'),
-            'Password' => new FixedValueRule('*'),
-            'Username' => new FixedValueRule('*'),
-            'IP' => new FixedValueRule('*'),
-            'signature' => new FixedValueRule('*'),
+            // Sensitive / authentication data
+            'fixedStar' => [
+                'cavv',
+                'threeddirectorytransactionreference',
+                'authenticationValue',
+                'dsTransID',
+                'sitereference',
+                'address',
+                'street',
+                'zip',
+                'ip',
+                'browser_ip',
+                'customerIp',
+                'password',
+                'auth',
+                'accessor',
+                'payload',
+                'paymentHandleToken',
+                'ciphertext',
+                'threeDSSessionData',
+                'creq',
+                'form3d_html',
+                'auth_code',
+                'dsReferenceNumber',
+                'Signature',
+                'Password',
+                'Username',
+                'IP',
+                'signature',
+            ],
 
-            // Completely redact (NullRule)
-            'pay_form_3d' => new NullRule(),
-            'PaRes' => new NullRule(),
-            'pares' => new NullRule(),
-            'MD' => new NullRule(),
-            'md' => new NullRule(),
-            'form3d' => new NullRule(),
-            'payment_url' => new NullRule(),
-            'SuccessURL' => new NullRule(),
-            'FailURL' => new NullRule(),
+            // Completely redact (null)
+            'null' => [
+                'pay_form_3d',
+                'PaRes',
+                'pares',
+                'MD',
+                'md',
+                'form3d',
+                'payment_url',
+                'SuccessURL',
+                'FailURL',
+            ],
 
-            // Name redaction
-            'card_holder' => new NameRule(),
-            'holder' => new NameRule(),
-            'name' => new NameRule(),
-            'customerfirstname' => new NameRule(),
-            'customerlastname' => new NameRule(),
-            'full_name' => new NameRule(),
-            'wallet' => new NameRule(),
-            'firstName' => new NameRule(),
-            'lastName' => new NameRule(),
-            'consumerId' => new NameRule(),
-            'holderName' => new NameRule(),
-            'Firstname' => new NameRule(),
-            'Lastname' => new NameRule(),
+            // Names
+            'name' => [
+                'card_holder',
+                'holder',
+                'name',
+                'customerfirstname',
+                'customerlastname',
+                'full_name',
+                'wallet',
+                'firstName',
+                'lastName',
+                'consumerId',
+                'holderName',
+                'Firstname',
+                'Lastname',
+            ],
 
-            // Phone numbers
-            'phone' => new PhoneRule(),
-            'MobilePhone' => new PhoneRule(),
+            // Phones
+            'phone' => [
+                'phone',
+                'MobilePhone',
+            ],
 
-            // Email addresses
-            'email' => new EmailRule(),
-            'client_email' => new EmailRule(),
-            'customeremail' => new EmailRule(),
-            'pay_from_email' => new EmailRule(),
-            'pay_to_email' => new EmailRule(),
-            'Email' => new EmailRule(),
+            // Emails
+            'email' => [
+                'email',
+                'client_email',
+                'customeremail',
+                'pay_from_email',
+                'pay_to_email',
+                'Email',
+            ],
         ];
     }
 }

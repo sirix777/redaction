@@ -27,12 +27,17 @@ use Sirix\Redaction\Rule\NameRule;
 use Sirix\Redaction\Enum\ObjectViewModeEnum;
 
 $redactor = new Redactor([
-    // Overwrite or add rules per key
+    // Overwrite or add rules per key; custom rules override defaults when keys overlap
+    // Option 1 — direct instantiation:
     'card_number' => new StartEndRule(6, 4),
-    'user' => [ // nested structure rules
-        'email' => new EmailRule(),
-        'name'  => new NameRule(),
-    ],
+    // Option 2 — via factory helper (equivalent):
+    // 'card_number' => SharedRuleFactory::startEnd(6, 4),
+    'email' => new EmailRule(),
+    // Factory helper (equivalent):
+    // 'email' => SharedRuleFactory::email(),
+    'name'  => new NameRule(),
+    // Factory helper (equivalent):
+    // 'name' => SharedRuleFactory::name(),
 ]);
 
 // Note: By default, Redactor loads a set of sensible default rules.
@@ -178,8 +183,8 @@ If you are not using Mezzio/Laminas, register the factory in your PSR‑11 conta
 
 - The redactor recursively walks through scalars in your data and applies a rule when a key matches.
 - Scalars at the top level (no key) are processed by all rules that operate on plain strings.
-- For arrays, you can specify nested rule maps that apply to the child structure.
-- Objects are handled according to an object view mode (default: Copy):
+- For arrays, the same flat rules map is used at every depth; rules match by key name regardless of nesting. Nested per-path rule maps are not supported.
+- Objects are handled according to an object view mode (default: Skip):
   - Copy: returns a plain stdClass copy and recursively processes both public and non-static private/protected properties.
   - PublicArray: returns an array of public properties only.
   - Skip: replaces the object with a compact string like "[object Foo\\Bar]".
@@ -187,7 +192,7 @@ If you are not using Mezzio/Laminas, register the factory in your PSR‑11 conta
 
 ## Default rules
 
-By default, the core `Redactor` loads a curated set of rules for common sensitive fields (card numbers/PAN, CVV, expiry, names, emails, phone, IPs, addresses, tokens, 3‑D Secure fields, etc.). See `src/Rule/Default/default_rules.php` for the complete list.
+By default, the core `Redactor` loads a curated set of rules for common sensitive fields (card numbers/PAN, CVV, expiry, names, emails, phone, IPs, addresses, tokens, 3‑D Secure fields, etc.). See `src/Rule/Default/DefaultRules.php` for the complete list.
 
 To disable default rules and use only your own:
 
@@ -197,17 +202,35 @@ $redactor = new Redactor(customRules: [], useDefaultRules: false);
 
 ## Built‑in rule types
 
-These rules live under `Sirix\Redaction\Rule` and can be combined as needed:
+These rules live under `Sirix\Redaction\Rule` and can be created directly or via factory helpers:
 
-- StartEndRule($visibleStart, $visibleEnd): masks the middle part of a string, keeping given number of characters at the start/end.
-- EmailRule: masks the local part of an email, keeping the first 3 characters and the full domain.
-- PhoneRule: masks digits in the middle of a phone number, keeping the first 4 and last 2 digits when possible.
-- FullMaskRule: replaces the entire value with the replacement character(s).
-- FixedValueRule($replacement): always outputs the provided constant string (e.g., `*` or `**/****`).
-- NameRule: masks personal names leaving just initials and/or a few characters as defined by the rule.
-- NullRule: sets the value to null.
+- `StartEndRule($visibleStart, $visibleEnd)` - available via `SharedRuleFactory::startEnd($visibleStart, $visibleEnd)`. Masks the middle part of a string, keeping the given number of characters at the start/end.
+- `EmailRule` available via `SharedRuleFactory::email()`. Masks the local part of an email, keeping the first 3 characters and the full domain.
+- `PhoneRule` available via `SharedRuleFactory::phone()`. Masks digits in the middle of a phone number, keeping the first 4 and last 2 digits when possible.
+- `FullMaskRule` available via `SharedRuleFactory::fullMask()`. Replaces the entire value with the replacement character(s).
+- `FixedValueRule($replacement)` available via `SharedRuleFactory::fixedValue($replacement)`. Always outputs the provided constant string (e.g., `*` or `**/****`).
+- `NameRule` available via `SharedRuleFactory::name()`. Masks personal names leaving just initials and/or a few characters as defined by the rule.
+- `NullRule` available via `SharedRuleFactory::null()`. Sets the value to null.
+- `OffsetRule($offset)` available via `SharedRuleFactory::offset($offset)`. Masks the first N characters (from the start) according to the offset.
 
-If you need a custom masking strategy, implement `RedactionRuleInterface`:
+### Shared rule factory (optional)
+
+For convenience and to reduce allocations, you can use the cached factory helpers:
+
+```php
+use Sirix\Redaction\Rule\Factory\SharedRuleFactory;
+use Sirix\Redaction\Redactor;
+
+$redactor = new Redactor([
+    'card_number' => SharedRuleFactory::startEnd(6, 4),
+    'email'       => SharedRuleFactory::email(),
+    'phone'       => SharedRuleFactory::phone(),
+]);
+```
+
+These helpers return shared instances of rules where possible (internally cached), which can be handy when wiring large maps of static rules.
+
+If you need a custom masking strategy, implement `RedactionRuleInterface`: 
 
 ```php
 use Sirix\Redaction\Rule\RedactionRuleInterface;
@@ -225,15 +248,15 @@ final class MyRule implements RedactionRuleInterface
 
 ## Redactor options
 
-- setReplacement(string $char): character used to construct masks (default `*`).
-- setTemplate(string $template): a `sprintf` template applied to the mask string (default `'%s'`). For example, `'[%s]'` wraps mask in brackets.
-- setLengthLimit(?int $limit): if set, truncates the resulting masked value to at most this length.
-- setObjectViewMode(ObjectViewModeEnum $mode): how to represent objects during redaction. Defaults to `ObjectViewModeEnum::Skip`.
-- setMaxDepth(?int $depth): maximum recursion depth for arrays/objects. `null` means unlimited.
-- setMaxItemsPerContainer(?int $count): limit the number of items processed per array/object (public props). `null` means unlimited.
-- setMaxTotalNodes(?int $count): global cap on visited nodes (array elements, object properties, child nodes). `null` means unlimited.
-- setOnLimitExceededCallback(?callable $cb): callback invoked when any limit is hit or a cycle is detected. Receives an info array with keys like `type`, `depth`, `nodesVisited`, and context-specific fields.
-- setOverflowPlaceholder(mixed $value): value used to replace truncated parts when limits are exceeded. If `null` (default), the original unmodified value is kept for that node.
+- `setReplacement(string $char)`: character used to construct masks (default `*`).
+- `setTemplate(string $template)`: a `sprintf` template applied to the mask string (default `'%s'`). For example, `'[%s]'` wraps mask in brackets.
+- `setLengthLimit(?int $limit)`: if set, truncates the resulting masked value to at most this length.
+- `setObjectViewMode(ObjectViewModeEnum $mode)`: how to represent objects during redaction. Defaults to `ObjectViewModeEnum::Skip`.
+- `setMaxDepth(?int $depth)`: maximum recursion depth for arrays/objects. `null` means unlimited.
+- `setMaxItemsPerContainer(?int $count)`: limit the number of items processed per array/object (public props). `null` means unlimited.
+- `setMaxTotalNodes(?int $count)`: global cap on visited nodes (array elements, object properties, child nodes). `null` means unlimited.
+- `setOnLimitExceededCallback(?callable $cb)`: callback invoked when any limit is hit or a cycle is detected. Receives an info array with keys like `type`, `depth`, `nodesVisited`, and context-specific fields.
+- `setOverflowPlaceholder(mixed $value)`: value used to replace truncated parts when limits are exceeded. If `null` (default), the original unmodified value is kept for that node.
 
 Notes:
 - These options influence rules that build masks (e.g., StartEndRule, PhoneRule) and the core traversal/limit behavior.

@@ -19,10 +19,8 @@ final class StartEndRuleTest extends TestCase
         $redactor = (new Redactor(
             [
                 'superpupersecret' => new StartEndRule(5, 4),
-                'objecthere' => [
-                    'secret' => new StartEndRule(2, 3),
-                    'secret2' => new StartEndRule(2, 0),
-                ],
+                'secret' => new StartEndRule(2, 3),
+                'secret2' => new StartEndRule(2, 0),
             ],
             false
         ))

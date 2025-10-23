@@ -39,10 +39,8 @@ final class RedactorProcessorTest extends TestCase
     public function testProcessesNestedArray(): void
     {
         $redactor = new Redactor([
-            'user' => [
-                'password' => new OffsetRule(2),
-                'token' => new OffsetRule(4),
-            ],
+            'password' => new OffsetRule(2),
+            'token' => new OffsetRule(4),
         ], false);
 
         $processor = new RedactorProcessor($redactor);
@@ -108,10 +106,8 @@ final class RedactorProcessorTest extends TestCase
         $processed = $processor($record);
 
         $this->assertInstanceOf(stdClass::class, $processed->context['user']);
-        // Non-traversable objects are processed via cloning and reflection; original remains unchanged
         $this->assertSame('my****', $processed->context['user']->password);
         $this->assertSame('carol', $processed->context['user']->username);
-        // Ensure original object is not mutated
         $this->assertSame('mypass', $user->password);
     }
 
@@ -142,10 +138,8 @@ final class RedactorProcessorTest extends TestCase
 
         $redactor = (new Redactor(
             [
-                'nested' => [
-                    'field1' => new OffsetRule(2),
-                    'field2' => new OffsetRule(3),
-                ],
+                'field1' => new OffsetRule(2),
+                'field2' => new OffsetRule(3),
             ],
             false
         ))
@@ -157,7 +151,6 @@ final class RedactorProcessorTest extends TestCase
         $record = $this->createRecord(['nested' => $nested]);
         $processed = $processor($record);
 
-        // Non-traversable objects are processed via cloning and reflection
         $this->assertSame('ab****', $processed->context['nested']->field1);
         $this->assertSame('123***', $processed->context['nested']->field2);
     }

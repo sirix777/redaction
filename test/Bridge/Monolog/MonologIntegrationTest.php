@@ -34,9 +34,7 @@ final class MonologIntegrationTest extends TestCase
     public function testProcessorWithNestedContext(): void
     {
         [$logger, $handler] = $this->createLogger([
-            'user' => [
-                'token' => new OffsetRule(4),
-            ],
+            'token' => new OffsetRule(4),
         ], false);
 
         $logger->info('Nested context', [
@@ -96,7 +94,7 @@ final class MonologIntegrationTest extends TestCase
 
     public function testDefaultRulesMaskEmail(): void
     {
-        [$logger, $handler] = $this->createLogger(); // дефолтные правила
+        [$logger, $handler] = $this->createLogger();
 
         $logger->info('Customer email', [
             'email' => 'alice@example.com',
