@@ -2,7 +2,7 @@
 
 A PHP library for data redaction, masking, and sanitization with optional Monolog and Mezzio/Laminas integration.
 
-This library provides a small core that can redact sensitive data in arrays, objects, and iterables using pluggable rules. You can use it anywhere in your app (HTTP payloads, DTOs, database debug dumps, etc.), and—optionally—plug it into Monolog via a tiny bridge. For framework users, a PSR‑11 factory and a Mezzio/Laminas ConfigProvider are included.
+This library provides a small core that can redact sensitive data in arrays, objects, and iterables using pluggable rules. You can use it anywhere in your app (HTTP payloads, DTOs, database debug dumps, etc.), and optionally plug it into Monolog via a tiny bridge. For framework users, a PSR‑11 factory and a Mezzio/Laminas ConfigProvider are included.
 
 - PHP 8.1–8.4
 - Optional: Monolog ^3.0 (for the bridge only)
