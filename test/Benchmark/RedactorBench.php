@@ -136,14 +136,5 @@ final class RedactorBench
 
 class User
 {
-    public string $username;
-    private string $password;
-    private string $token;
-
-    public function __construct(string $username, string $password, string $token)
-    {
-        $this->username = $username;
-        $this->password = $password;
-        $this->token = $token;
-    }
+    public function __construct(public string $username, public string $password, public string $token) {}
 }
