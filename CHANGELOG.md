@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 24/10/2025
+### Changed
+- Core: Implemented copy-on-write traversal in Redactor to reduce memory usage.
+  - No copying by default when no redaction occurs.
+  - Lazy copying for arrays and objects; copies are created only on first change.
+  - Preserved immutability and maintained public API behavior.
+  - Depth/item/node limits and cycle detection maintained; overflow placeholder respected.
+- Docs: README updated with memory optimization notes and guidance.
+
 ## [1.2.0] - 23/10/2025
 ### Added
 - Shared rule factory helpers via `Sirix\Redaction\Rule\Factory\SharedRuleFactory` for convenient, cached creation of common rules.

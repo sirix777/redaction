@@ -34,8 +34,8 @@
     "psr/container": "^1.0 || ^2.0.2"
   },
   "suggest": {
-    "monolog/monolog": "Install to enable Monolog processor integration for automatic redaction in logs.",
-    "mezzio/mezzio": "Install to use the Mezzio integration provider and DI factories (ConfigProvider)."
+    "mezzio/mezzio": "Install to use the Mezzio integration provider and DI factories (ConfigProvider).",
+    "monolog/monolog": "Install to enable Monolog processor integration for automatic redaction in logs."
   },
   "autoload": {
     "psr-4": {
@@ -66,6 +66,7 @@
   },
   "scripts": {
     "analyse-deps": "tools/composer-dependency-analyser/vendor/bin/composer-dependency-analyser",
+    "bench": "php vendor/bin/phpbench run test/Benchmark --report=default",
     "check": [
       "@cs-check",
       "@rector",

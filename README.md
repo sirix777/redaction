@@ -179,6 +179,17 @@ final class MyService
 
 If you are not using Mezzio/Laminas, register the factory in your PSR‑11 container of choice, passing the `redactor.options` structure as shown above.
 
+## Memory optimization
+
+As of 1.3.0, the Redactor uses a copy-on-write traversal strategy:
+
+- No copying by default: When no rules apply to a value (including nested arrays/objects), the original structure is returned as-is, avoiding unnecessary copies.
+- Lazy copying: Arrays and objects are only copied when a change is first detected. For arrays, a target array is created only upon the first modified element; for objects (Copy mode), a stdClass clone is created only if a public or private property changes.
+- Immutability preserved: The top-level input you pass to redact() is never mutated. When changes occur, they are applied to the lazily created copies.
+- Limits and cycles: All existing depth/item/node limits and cycle detection continue to work. When a limit is hit and an overflow placeholder is configured, it is used for the truncated part.
+
+This significantly reduces peak memory usage when little or no redaction occurs, while maintaining the public API and behavior.
+
 ## How it works
 
 - The redactor recursively walks through scalars in your data and applies a rule when a key matches.

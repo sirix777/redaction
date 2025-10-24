@@ -20,6 +20,7 @@ use function is_array;
 use function is_callable;
 use function is_object;
 use function is_scalar;
+use function iterator_to_array;
 use function sprintf;
 
 final class Redactor implements RedactorInterface
@@ -49,6 +50,9 @@ final class Redactor implements RedactorInterface
      */
     private ?SplObjectStorage $seenObjects = null;
 
+    /** @var array<string, ReflectionClass<object>> */
+    private static array $reflectionCache = [];
+
     /**
      * @param array<string, mixed> $customRules
      */
@@ -67,11 +71,12 @@ final class Redactor implements RedactorInterface
     public function redact(mixed $rawData): mixed
     {
         $this->resetState();
-        $redactedData = $rawData;
 
-        $this->processValue($redactedData, $this->rules);
+        $result = $this->processValueCopy($rawData, $this->rules);
 
-        return $redactedData;
+        $this->seenObjects = null;
+
+        return $result;
     }
 
     public function setReplacement(string $replacement): RedactorInterface
@@ -196,17 +201,9 @@ final class Redactor implements RedactorInterface
      */
     private function processValue(mixed &$value, array $rules): void
     {
-        if (is_scalar($value)) {
-            return;
-        }
-
         if (is_array($value)) {
             $this->processContainer($value, $rules);
-
-            return;
-        }
-
-        if (is_object($value) && $this->shouldProcessObject($value)) {
+        } elseif (is_object($value) && $this->shouldProcessObject($value)) {
             $this->processObject($value, $rules);
         }
     }
@@ -222,14 +219,13 @@ final class Redactor implements RedactorInterface
      */
     private function processContainer(array &$array, array $rules): void
     {
-        if ($this->shouldStopForDepth()) {
+        if (! $this->enterDepth()) {
             $this->onLimit('maxDepth', ['kind' => 'array']);
             $this->replaceIfNeeded($array);
 
             return;
         }
 
-        ++$this->currentDepth;
         $count = 0;
 
         foreach ($array as $key => &$item) {
@@ -241,7 +237,7 @@ final class Redactor implements RedactorInterface
         }
 
         unset($item);
-        --$this->currentDepth;
+        $this->leaveDepth();
     }
 
     /**
@@ -312,24 +308,7 @@ final class Redactor implements RedactorInterface
      */
     private function processObjectAsArray(object $object, array $rules): array
     {
-        $redactedData = [];
-        $count = 0;
-
-        foreach (get_object_vars($object) as $name => $propValue) {
-            if ($this->checkLimitPerContainer($count, $name)) {
-                break;
-            }
-
-            if ($this->hitNodeLimit('object_property', $name)) {
-                $redactedData[$name] = $this->overflowPlaceholder ?? $propValue;
-
-                continue;
-            }
-
-            $redactedData[$name] = $this->maskValue($name, $propValue, $rules);
-        }
-
-        return $redactedData;
+        return $this->processProperties(get_object_vars($object), $rules);
     }
 
     /**
@@ -337,7 +316,7 @@ final class Redactor implements RedactorInterface
      */
     private function processPrivateProperties(object $object, array $rules, object $copy): void
     {
-        $ref = new ReflectionClass($object);
+        $ref = $this->getReflection($object);
 
         foreach ($ref->getProperties() as $prop) {
             if ($prop->isPublic()) {
@@ -366,20 +345,8 @@ final class Redactor implements RedactorInterface
      */
     private function processPublicProperties(object $object, array $rules, object $copy): void
     {
-        $count = 0;
-
-        foreach (get_object_vars($object) as $name => $propValue) {
-            if ($this->checkLimitPerContainer($count, $name)) {
-                break;
-            }
-
-            if ($this->hitNodeLimit('object_property', $name)) {
-                $copy->{$name} = $this->overflowPlaceholder ?? $propValue;
-
-                continue;
-            }
-
-            $copy->{$name} = $this->maskValue($name, $propValue, $rules);
+        foreach ($this->processProperties(get_object_vars($object), $rules) as $name => $value) {
+            $copy->{$name} = $value;
         }
     }
 
@@ -388,8 +355,9 @@ final class Redactor implements RedactorInterface
      */
     private function maskValue(string $key, mixed $value, array $rules): mixed
     {
-        if (is_scalar($value) && isset($rules[$key]) && $rules[$key] instanceof RedactionRuleInterface) {
-            return $rules[$key]->apply((string) $value, $this);
+        $rule = $rules[$key] ?? null;
+        if (is_scalar($value) && $rule instanceof RedactionRuleInterface) {
+            return $rule->apply((string) $value, $this);
         }
 
         if (is_array($value) || (is_object($value) && $this->shouldProcessObject($value))) {
@@ -439,9 +407,7 @@ final class Redactor implements RedactorInterface
 
     private function hitNodeLimit(string $kind, int|string $key): bool
     {
-        ++$this->nodesVisited;
-
-        if (null !== $this->maxTotalNodes && $this->nodesVisited > $this->maxTotalNodes) {
+        if (++$this->nodesVisited > ($this->maxTotalNodes ?? PHP_INT_MAX)) {
             $this->onLimit('maxTotalNodes', ['kind' => $kind, 'key' => $key]);
 
             return true;
@@ -487,5 +453,273 @@ final class Redactor implements RedactorInterface
         $this->seenObjects = ObjectViewModeEnum::Skip === $this->objectViewMode
             ? null
             : new SplObjectStorage();
+    }
+
+    /**
+     * @template T of object
+     *
+     * @param T $object
+     *
+     * @return ReflectionClass<object>
+     */
+    private function getReflection(object $object): ReflectionClass
+    {
+        $class = $object::class;
+        if (! isset(self::$reflectionCache[$class])) {
+            $newReflection = new ReflectionClass($object);
+            self::$reflectionCache[$class] = $newReflection;
+        }
+
+        return self::$reflectionCache[$class];
+    }
+
+    private function enterDepth(): bool
+    {
+        if (null !== $this->maxDepth && $this->currentDepth >= $this->maxDepth) {
+            return false;
+        }
+        ++$this->currentDepth;
+
+        return true;
+    }
+
+    private function leaveDepth(): void
+    {
+        --$this->currentDepth;
+    }
+
+    /**
+     * @param iterable<string, mixed>                                    $vars
+     * @param array<string, array<string, mixed>|RedactionRuleInterface> $rules
+     *
+     * @return array<string, mixed>
+     */
+    private function processProperties(iterable $vars, array $rules): array
+    {
+        $result = [];
+        $count = 0;
+
+        foreach ($vars as $name => $value) {
+            if ($this->checkLimitPerContainer($count, $name)) {
+                break;
+            }
+
+            if ($this->hitNodeLimit('object_property', $name)) {
+                $result[$name] = $this->overflowPlaceholder ?? $value;
+
+                continue;
+            }
+
+            $result[$name] = $this->maskValue($name, $value, $rules);
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param array<string, array<string, mixed>|RedactionRuleInterface> $rules
+     */
+    private function processValueCopy(mixed $value, array $rules): mixed
+    {
+        if (is_array($value)) {
+            if (! $this->enterDepth()) {
+                $this->onLimit('maxDepth', ['kind' => 'array']);
+
+                return $this->overflowPlaceholder ?? $value;
+            }
+
+            $result = $this->processContainerCopy($value, $rules);
+            $this->leaveDepth();
+
+            return $result;
+        }
+
+        if (is_object($value) && $this->shouldProcessObject($value)) {
+            return $this->processObjectCopy($value, $rules);
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param array<string, mixed>                                       $array
+     * @param array<string, array<string, mixed>|RedactionRuleInterface> $rules
+     *
+     * @return array<string, mixed>
+     */
+    private function processContainerCopy(array $array, array $rules): array
+    {
+        $result = null;
+        $count = 0;
+
+        foreach ($array as $key => $item) {
+            if ($this->checkLimitPerContainer($count, $key)) {
+                continue;
+            }
+
+            $processedItem = $this->processChildCopy($key, $item, $rules);
+
+            if ($processedItem !== $item && null === $result) {
+                $result = $array;
+            }
+
+            if (null !== $result) {
+                $result[$key] = $processedItem;
+            }
+        }
+
+        return $result ?? $array;
+    }
+
+    /**
+     * @param array<string, array<string, mixed>|RedactionRuleInterface> $rules
+     */
+    private function processObjectCopy(object $object, array $rules): mixed
+    {
+        if (ObjectViewModeEnum::Skip === $this->objectViewMode) {
+            return sprintf('[object %s]', get_debug_type($object));
+        }
+
+        if ($this->shouldSkipObject($object)) {
+            return $this->overflowPlaceholder ?? $object;
+        }
+
+        $this->seenObjects?->attach($object, true);
+        ++$this->currentDepth;
+
+        try {
+            if (ObjectViewModeEnum::PublicArray === $this->objectViewMode) {
+                return $this->processPublicArrayCopy(get_object_vars($object), $rules);
+            }
+
+            return $this->processFullObjectCopy($object, $rules);
+        } finally {
+            --$this->currentDepth;
+        }
+    }
+
+    /**
+     * @param array<string, mixed>                                       $publicProps
+     * @param array<string, array<string, mixed>|RedactionRuleInterface> $rules
+     *
+     * @return array<string, mixed>
+     */
+    private function processPublicArrayCopy(array $publicProps, array $rules): array
+    {
+        return $this->processPropertiesCopy($publicProps, $rules);
+    }
+
+    /**
+     * @param array<string, array<string, mixed>|RedactionRuleInterface> $rules
+     */
+    private function processFullObjectCopy(object $object, array $rules): object
+    {
+        $ref = $this->getReflection($object);
+        $originalVars = get_object_vars($object);
+        $processedVars = $this->processPropertiesCopy($originalVars, $rules);
+
+        $changed = $processedVars !== $originalVars;
+
+        foreach ($ref->getProperties() as $prop) {
+            if ($prop->isPublic()) {
+                continue;
+            }
+
+            if ($prop->isStatic()) {
+                continue;
+            }
+
+            $name = $prop->getName();
+            $val = $prop->getValue($object);
+            $processedVal = $this->maskValueCopy($name, $val, $rules);
+
+            if ($processedVal !== $val) {
+                $changed = true;
+            }
+
+            $processedVars[$name] = $processedVal;
+        }
+
+        if (! $changed) {
+            return $object;
+        }
+
+        $copy = new stdClass();
+        foreach ($processedVars as $name => $val) {
+            $copy->{$name} = $val;
+        }
+
+        return $copy;
+    }
+
+    /**
+     * @param array<string, array<string, mixed>|RedactionRuleInterface> $rules
+     */
+    private function processChildCopy(int|string $key, mixed $item, array $rules): mixed
+    {
+        if ($this->hitNodeLimit('node', $key)) {
+            return $this->overflowPlaceholder ?? $item;
+        }
+
+        if (is_scalar($item) && isset($rules[$key]) && $rules[$key] instanceof RedactionRuleInterface) {
+            return $rules[$key]->apply((string) $item, $this);
+        }
+
+        if (is_array($item) || (is_object($item) && $this->shouldProcessObject($item))) {
+            return $this->processValueCopy($item, $rules);
+        }
+
+        return $item;
+    }
+
+    /**
+     * @param array<string, array<string, mixed>|RedactionRuleInterface> $rules
+     */
+    private function maskValueCopy(string $key, mixed $value, array $rules): mixed
+    {
+        $rule = $rules[$key] ?? null;
+        if (is_scalar($value) && $rule instanceof RedactionRuleInterface) {
+            return $rule->apply((string) $value, $this);
+        }
+
+        if (is_array($value) || (is_object($value) && $this->shouldProcessObject($value))) {
+            return $this->processValueCopy($value, $rules);
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param iterable<string, mixed>                                    $vars
+     * @param array<string, array<string, mixed>|RedactionRuleInterface> $rules
+     *
+     * @return array<string, mixed>
+     */
+    private function processPropertiesCopy(iterable $vars, array $rules): array
+    {
+        $result = null;
+        $count = 0;
+
+        foreach ($vars as $name => $value) {
+            if ($this->checkLimitPerContainer($count, $name)) {
+                break;
+            }
+
+            if ($this->hitNodeLimit('object_property', $name)) {
+                $processed = $this->overflowPlaceholder ?? $value;
+            } else {
+                $processed = $this->maskValueCopy((string) $name, $value, $rules);
+            }
+
+            if ($processed !== $value && null === $result) {
+                $result = is_array($vars) ? $vars : iterator_to_array($vars);
+            }
+
+            if (null !== $result) {
+                $result[$name] = $processed;
+            }
+        }
+
+        return $result ?? (is_array($vars) ? $vars : iterator_to_array($vars));
     }
 }
