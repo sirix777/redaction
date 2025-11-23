@@ -6,9 +6,9 @@ namespace Sirix\Redaction\Rule;
 
 use Sirix\Redaction\RedactorInterface;
 
-final class FixedValueRule implements RedactionRuleInterface
+final readonly class FixedValueRule implements RedactionRuleInterface
 {
-    public function __construct(private readonly string $value) {}
+    public function __construct(private string $value) {}
 
     public function apply(string $value, RedactorInterface $redactor): string
     {

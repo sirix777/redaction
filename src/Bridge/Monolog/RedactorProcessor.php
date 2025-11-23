@@ -8,9 +8,9 @@ use Monolog\LogRecord;
 use Monolog\Processor\ProcessorInterface;
 use Sirix\Redaction\RedactorInterface;
 
-final class RedactorProcessor implements ProcessorInterface
+final readonly class RedactorProcessor implements ProcessorInterface
 {
-    public function __construct(private readonly RedactorInterface $redactor) {}
+    public function __construct(private RedactorInterface $redactor) {}
 
     public function __invoke(LogRecord $record): LogRecord
     {

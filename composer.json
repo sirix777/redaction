@@ -24,13 +24,13 @@
     "laminas"
   ],
   "require": {
-    "php": "~8.1.0 || ~8.2.0 || ~8.3.0 || ~8.4.0"
+    "php": "~8.2.0 || ~8.3.0 || ~8.4.0 || ~8.5.0"
   },
   "require-dev": {
     "bamarni/composer-bin-plugin": "^1.8.2",
     "monolog/monolog": "^3.9",
-    "phpbench/phpbench": "^1.4",
-    "phpunit/phpunit": "^10.5.58",
+    "phpbench/phpbench": "^1.4.3",
+    "phpunit/phpunit": "^11.5.44",
     "psr/container": "^1.0 || ^2.0.2"
   },
   "suggest": {

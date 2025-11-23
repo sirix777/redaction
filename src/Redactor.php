@@ -259,7 +259,8 @@ final class Redactor implements RedactorInterface
             return;
         }
 
-        $this->seenObjects?->attach($object, true);
+        // SplObjectStorage::attach() is deprecated since PHP 8.5, use offsetSet() instead
+        $this->seenObjects?->offsetSet($object, true);
 
         ++$this->currentDepth;
 
@@ -273,7 +274,8 @@ final class Redactor implements RedactorInterface
 
     private function shouldSkipObject(object $object): bool
     {
-        if ($this->seenObjects?->contains($object)) {
+        // SplObjectStorage::contains() is deprecated since PHP 8.5, use offsetExists() instead
+        if ($this->seenObjects?->offsetExists($object)) {
             $this->onLimit('cycle', ['class' => get_debug_type($object)]);
 
             return true;
@@ -584,7 +586,8 @@ final class Redactor implements RedactorInterface
             return $this->overflowPlaceholder ?? $object;
         }
 
-        $this->seenObjects?->attach($object, true);
+        // SplObjectStorage::attach() is deprecated since PHP 8.5, use offsetSet() instead
+        $this->seenObjects?->offsetSet($object, true);
         ++$this->currentDepth;
 
         try {

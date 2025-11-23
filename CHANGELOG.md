@@ -5,7 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.3.0] - 24/10/2025
+## [1.3.1] - 2025-11-23
+### Changed
+- Platform: Bumped supported PHP versions to 8.2–8.5; dropped 8.1.
+- Tooling: Updated PHPUnit to 11.x and refreshed phpunit.xml with detailed reporting and cache settings.
+- Tooling: Advanced Rector level to PHP 8.2; PHP-CS-Fixer config updated to PHP 8.2 rules and allow unsupported PHP version.
+- Code quality: Marked small immutable components as `readonly` classes (`FixedValueRule`, `OffsetRule`, `Bridge\Monolog\RedactorProcessor`) to reflect intent and improve safety. No public API changes.
+- Docs: README updated to reflect new PHP version support.
+
+## [1.3.0] - 2025-10-24
 ### Changed
 - Core: Implemented copy-on-write traversal in Redactor to reduce memory usage.
   - No copying by default when no redaction occurs.
@@ -14,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Depth/item/node limits and cycle detection maintained; overflow placeholder respected.
 - Docs: README updated with memory optimization notes and guidance.
 
-## [1.2.0] - 23/10/2025
+## [1.2.0] - 2025-10-23
 ### Added
 - Shared rule factory helpers via `Sirix\Redaction\Rule\Factory\SharedRuleFactory` for convenient, cached creation of common rules.
 - Additional tests covering nested keys, object reflection, rule behaviors, and Monolog integration.
@@ -24,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved masking behavior and edge-case handling in rules (e.g., Email, Name, Phone, Offset) and documentation examples.
 - README updated with detailed configuration, rule factory usage, and operational notes.
 
-## [1.1.0] - 23/10/2025
+## [1.1.0] - 2025-10-23
 ### Added
 - Mezzio/Laminas integration via `Sirix\Redaction\Bridge\Mezzio\ConfigProvider` for automatic container wiring.
 - PSR‑11 factory `Sirix\Redaction\Factory\RedactorFactory` to build `Redactor` from container config.
@@ -37,7 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Composer metadata: suggestions for Mezzio integration and keywords improved.
 - Documentation improvements and examples.
 
-## [1.0.0] - 22/10/2025
+## [1.0.0] - 2025-10-22
 ### Added
 - Initial public release of `sirix/redaction`.
 - Core Redactor with recursive redaction for arrays, objects, and iterables.

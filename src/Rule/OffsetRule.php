@@ -13,9 +13,9 @@ use function str_repeat;
 use function strlen;
 use function substr;
 
-final class OffsetRule implements RedactionRuleInterface
+final readonly class OffsetRule implements RedactionRuleInterface
 {
-    public function __construct(private readonly int $offset) {}
+    public function __construct(private int $offset) {}
 
     public function apply(string $value, RedactorInterface $redactor): string
     {
