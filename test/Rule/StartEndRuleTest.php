@@ -24,7 +24,7 @@ final class StartEndRuleTest extends TestCase
             ],
             false
         ))
-            ->setObjectViewMode(ObjectViewModeEnum::Copy)
+            ->withObjectViewMode(ObjectViewModeEnum::Copy)
         ;
 
         $value = $this->convertNested([
@@ -45,8 +45,9 @@ final class StartEndRuleTest extends TestCase
     public function testCustomTemplate(): void
     {
         $rule = new StartEndRule(2, 3);
-        $redactor = new Redactor(['secret' => $rule], false);
-        $redactor->setTemplate('%s(redacted)');
+        $redactor = (new Redactor(['secret' => $rule], false))
+            ->withTemplate('%s(redacted)')
+        ;
 
         $processed = $redactor->redact($this->convertNested(['secret' => 'my_secret_value']));
 

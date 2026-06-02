@@ -13,25 +13,11 @@ use Sirix\Redaction\Rule\RedactionRuleInterface;
 final class DefaultRules
 {
     /**
-     * @var null|array<string, RedactionRuleInterface>
-     */
-    private static ?array $cachedRules = null;
-
-    /**
      * @return array<string, RedactionRuleInterface>
      */
     public static function getAll(): array
     {
-        if (null === self::$cachedRules) {
-            self::$cachedRules = self::createRules();
-        }
-
-        return self::$cachedRules;
-    }
-
-    public static function clearCache(): void
-    {
-        self::$cachedRules = null;
+        return self::createRules();
     }
 
     /**

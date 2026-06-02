@@ -50,7 +50,7 @@ final class PhoneRuleTest extends TestCase
             ],
             false
         ))
-            ->setObjectViewMode(ObjectViewModeEnum::Copy)
+            ->withObjectViewMode(ObjectViewModeEnum::Copy)
         ;
 
         $processed = $redactor->redact($this->convertNested([

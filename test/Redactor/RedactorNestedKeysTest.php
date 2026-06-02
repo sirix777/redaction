@@ -25,7 +25,7 @@ final class RedactorNestedKeysTest extends TestCase
             ],
             false
         ))
-            ->setObjectViewMode(ObjectViewModeEnum::Copy)
+            ->withObjectViewMode(ObjectViewModeEnum::Copy)
         ;
 
         $data = [
@@ -55,7 +55,7 @@ final class RedactorNestedKeysTest extends TestCase
             ],
             false
         ))
-            ->setObjectViewMode(ObjectViewModeEnum::Copy)
+            ->withObjectViewMode(ObjectViewModeEnum::Copy)
         ;
 
         $data = [
@@ -85,7 +85,7 @@ final class RedactorNestedKeysTest extends TestCase
             ],
             false
         ))
-            ->setObjectViewMode(ObjectViewModeEnum::Copy)
+            ->withObjectViewMode(ObjectViewModeEnum::Copy)
         ;
 
         $data = [

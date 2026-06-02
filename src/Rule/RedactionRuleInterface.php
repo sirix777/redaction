@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Sirix\Redaction\Rule;
 
-use Sirix\Redaction\RedactorInterface;
+use Sirix\Redaction\RedactionRuleContextInterface;
 
 interface RedactionRuleInterface
 {
-    public function apply(string $value, RedactorInterface $redactor): ?string;
+    public function apply(string $value, RedactionRuleContextInterface $context): ?string;
 }

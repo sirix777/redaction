@@ -96,7 +96,7 @@ final class RedactorProcessorTest extends TestCase
             ],
             false
         ))
-            ->setObjectViewMode(ObjectViewModeEnum::Copy)
+            ->withObjectViewMode(ObjectViewModeEnum::Copy)
         ;
 
         $processor = new RedactorProcessor($redactor);
@@ -113,11 +113,11 @@ final class RedactorProcessorTest extends TestCase
 
     public function testProcessesPartialMaskWithStartEndRule(): void
     {
-        $redactor = new Redactor([
+        $redactor = (new Redactor([
             'secret' => new StartEndRule(2, 3),
-        ], false);
-
-        $redactor->setTemplate('%s(redacted)');
+        ], false))
+            ->withTemplate('%s(redacted)')
+        ;
 
         $processor = new RedactorProcessor($redactor);
 
@@ -143,7 +143,7 @@ final class RedactorProcessorTest extends TestCase
             ],
             false
         ))
-            ->setObjectViewMode(ObjectViewModeEnum::Copy)
+            ->withObjectViewMode(ObjectViewModeEnum::Copy)
         ;
 
         $processor = new RedactorProcessor($redactor);

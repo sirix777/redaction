@@ -32,8 +32,9 @@ final class FullMaskRuleTest extends TestCase
     public function testCustomReplacement(): void
     {
         $rule = new FullMaskRule();
-        $redactor = new Redactor(['secret' => $rule], false);
-        $redactor->setReplacement('#');
+        $redactor = (new Redactor(['secret' => $rule], false))
+            ->withReplacement('#')
+        ;
 
         $processed = $redactor->redact($this->convertNested(['secret' => 'my_secret_value']));
 

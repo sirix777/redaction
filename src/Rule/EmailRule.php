@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Sirix\Redaction\Rule;
 
-use Sirix\Redaction\RedactorInterface;
+use Sirix\Redaction\RedactionRuleContextInterface;
 
-use function preg_replace;
+use function max;
+use function strpos;
+use function substr;
 
 final class EmailRule extends AbstractStartEndRule implements RedactionRuleInterface
 {
@@ -15,14 +17,19 @@ final class EmailRule extends AbstractStartEndRule implements RedactionRuleInter
         parent::__construct(3, 4);
     }
 
-    public function apply(string $value, RedactorInterface $redactor): string
+    public function apply(string $value, RedactionRuleContextInterface $context): string
     {
-        $masked = preg_replace('/^([^@]{3})[^@]*(@.*)$/', '$1****$2', $value);
-
-        if (null === $masked || $masked === $value) {
-            return parent::apply($value, $redactor);
+        $atPosition = strpos($value, '@');
+        if (false === $atPosition || $atPosition < 3) {
+            return parent::apply($value, $context);
         }
 
-        return $masked;
+        $maskedPrefix = substr($value, 0, 3) . '****';
+        $limit = $context->getLengthLimit();
+        if (null === $limit) {
+            return $maskedPrefix . substr($value, $atPosition);
+        }
+
+        return substr($maskedPrefix . substr($value, $atPosition, max(0, $limit - 7)), 0, $limit);
     }
 }

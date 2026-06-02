@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Sirix\Redaction\Enum\ObjectViewModeEnum;
 use Sirix\Redaction\Factory\RedactorFactory;
 use Sirix\Redaction\Redactor;
 use Sirix\Redaction\RedactorInterface;
@@ -36,16 +35,16 @@ return [
             // Whether to load built‑in default rules (bool, default: true)
             'use_default_rules' => true,
 
-            // Core options mirrored from setters (all optional)
+            // Core options (all optional, read strictly; no scalar coercion)
             'replacement' => '*',                 // string
-            'template' => '%s',                   // string
-            'length_limit' => null,               // int|null
-            'object_view_mode' => ObjectViewModeEnum::Copy,
-            'max_depth' => null,                  // int|null
-            'max_items_per_container' => null,    // int|null
-            'max_total_nodes' => null,            // int|null
+            'template' => '%s',                   // string, exactly one plain %s placeholder
+            'length_limit' => null,               // int|null, numeric strings are invalid
+            'object_view_mode' => 'copy',         // enum instance or: copy|public_array|skip
+            'max_depth' => null,                  // int|null, numeric strings are invalid
+            'max_items_per_container' => null,    // int|null, numeric strings are invalid
+            'max_total_nodes' => null,            // int|null, numeric strings are invalid
             'on_limit_exceeded_callback' => null, // callable|null
-            'overflow_placeholder' => '...',      // string
+            'overflow_placeholder' => '...',      // string|null, null omits markers and uses null for exceeded branches
         ],
     ],
 ];
