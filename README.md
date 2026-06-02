@@ -1,5 +1,7 @@
 # Redaction
 
+[![Latest Stable Version](http://poser.pugx.org/sirix/redaction/v)](https://packagist.org/packages/sirix/redaction) [![Total Downloads](http://poser.pugx.org/sirix/redaction/downloads)](https://packagist.org/packages/sirix/redaction) [![Latest Unstable Version](http://poser.pugx.org/sirix/redaction/v/unstable)](https://packagist.org/packages/sirix/redaction) [![License](http://poser.pugx.org/sirix/redaction/license)](https://packagist.org/packages/sirix/redaction) [![PHP Version Require](http://poser.pugx.org/sirix/redaction/require/php)](https://packagist.org/packages/sirix/redaction)
+
 A PHP library for data redaction, masking, and sanitization with optional Monolog and Mezzio/Laminas integration.
 
 This library provides a small core that can redact sensitive data in arrays and objects using pluggable rules. You can use it anywhere in your app (HTTP payloads, DTOs, database debug dumps, etc.), and optionally plug it into Monolog via a tiny bridge. For framework users, a PSR‑11 factory and a Mezzio/Laminas ConfigProvider are included.
