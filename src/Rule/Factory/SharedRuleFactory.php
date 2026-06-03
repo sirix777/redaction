@@ -13,12 +13,18 @@ use Sirix\Redaction\Rule\OffsetRule;
 use Sirix\Redaction\Rule\PhoneRule;
 use Sirix\Redaction\Rule\RedactionRuleInterface;
 use Sirix\Redaction\Rule\StartEndRule;
+use Sirix\Redaction\Rule\UnicodeStartEndRule;
 
 final class SharedRuleFactory
 {
     public static function startEnd(int $start, int $end): RedactionRuleInterface
     {
         return new StartEndRule($start, $end);
+    }
+
+    public static function unicodeStartEnd(int $start, int $end): RedactionRuleInterface
+    {
+        return new UnicodeStartEndRule($start, $end);
     }
 
     public static function fullMask(): RedactionRuleInterface

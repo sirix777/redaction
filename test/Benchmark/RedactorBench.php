@@ -36,10 +36,17 @@ final class RedactorBench
     private array $deepData = [];
 
     private Redactor $objectCopyRedactor;
-    private Redactor $objectRefRedactor;
+    private Redactor $objectPublicArrayRedactor;
 
     /** @var list<object> */
     private array $objectData = [];
+
+    private Redactor $largeArrayItemsLimitRedactor;
+    private Redactor $largeArrayNodeLimitRedactor;
+
+    /** @var list<array<string, mixed>> */
+    private array $noRedactionPayload = [];
+    private Redactor $noRedactionRedactor;
 
     private Redactor $smallPayloadRedactor;
     private array $smallPayload = [];
@@ -74,9 +81,27 @@ final class RedactorBench
     }
 
     #[Bench\BeforeMethods(['setUpLargeObjectGraph'])]
-    public function benchLargeObjectGraphReferenceMode(): void
+    public function benchLargeObjectGraphPublicArrayMode(): void
     {
-        $this->objectRefRedactor->redact($this->objectData);
+        $this->objectPublicArrayRedactor->redact($this->objectData);
+    }
+
+    #[Bench\BeforeMethods(['setUpLargeArray'])]
+    public function benchLargeArrayWithMaxItemsLimit(): void
+    {
+        $this->largeArrayItemsLimitRedactor->redact($this->largeArray);
+    }
+
+    #[Bench\BeforeMethods(['setUpLargeArray'])]
+    public function benchLargeArrayWithMaxTotalNodes(): void
+    {
+        $this->largeArrayNodeLimitRedactor->redact($this->largeArray);
+    }
+
+    #[Bench\BeforeMethods(['setUpNoRedactionPayload'])]
+    public function benchNoRedactionCopyOnWrite(): void
+    {
+        $this->noRedactionRedactor->redact($this->noRedactionPayload);
     }
 
     #[Bench\BeforeMethods(['setUpSmallPayload'])]
@@ -109,6 +134,26 @@ final class RedactorBench
 
         $this->largeArray = $records;
         $this->defaultRedactor = new Redactor();
+        $this->largeArrayItemsLimitRedactor = (new Redactor())->withMaxItemsPerContainer(10);
+        $this->largeArrayNodeLimitRedactor = (new Redactor())->withMaxTotalNodes(50);
+    }
+
+    public function setUpNoRedactionPayload(): void
+    {
+        $records = [];
+        for ($i = 0; $i < 2000; ++$i) {
+            $records[] = [
+                'id' => $i,
+                'status' => 'ok',
+                'metadata' => [
+                    'source' => 'benchmark',
+                    'sequence' => $i,
+                ],
+            ];
+        }
+
+        $this->noRedactionPayload = $records;
+        $this->noRedactionRedactor = new Redactor([], false);
     }
 
     public function setUpDeepNesting(): void
@@ -183,7 +228,7 @@ final class RedactorBench
             ->withObjectViewMode(ObjectViewModeEnum::Copy)
         ;
 
-        $this->objectRefRedactor = (new Redactor($rules, false))
+        $this->objectPublicArrayRedactor = (new Redactor($rules, false))
             ->withObjectViewMode(ObjectViewModeEnum::PublicArray)
         ;
     }

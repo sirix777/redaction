@@ -27,8 +27,9 @@ final class RedactorFactoryTest extends TestCase
         $factory = new RedactorFactory();
         $service = $factory($this->containerWithoutConfig());
 
-        $this->assertInstanceOf(Redactor::class, $service);
         $this->assertInstanceOf(RedactorInterface::class, $service);
+        $service = $this->assertRedactor($service);
+
         $this->assertSame('*', $service->getReplacement());
         $this->assertSame('%s', $service->getTemplate());
         $this->assertNull($service->getLengthLimit());
@@ -67,6 +68,8 @@ final class RedactorFactoryTest extends TestCase
             ],
         ]));
 
+        $service = $this->assertRedactor($service);
+
         $this->assertSame('X', $service->getReplacement());
         $this->assertSame('(%s)', $service->getTemplate());
         $this->assertSame(5, $service->getLengthLimit());
@@ -93,6 +96,8 @@ final class RedactorFactoryTest extends TestCase
             ],
         ]));
 
+        $service = $this->assertRedactor($service);
+
         $this->assertSame(ObjectViewModeEnum::Copy, $service->getObjectViewMode());
     }
 
@@ -113,6 +118,8 @@ final class RedactorFactoryTest extends TestCase
                 ],
             ],
         ]));
+
+        $service = $this->assertRedactor($service);
 
         $this->assertNull($service->getLengthLimit());
         $this->assertNull($service->getMaxDepth());
@@ -312,6 +319,13 @@ final class RedactorFactoryTest extends TestCase
         $this->expectException(InvalidContainerServiceException::class);
 
         (new RedactorFactory())($this->containerWithConfig('not-an-array'));
+    }
+
+    private function assertRedactor(RedactorInterface $service): Redactor
+    {
+        $this->assertInstanceOf(Redactor::class, $service);
+
+        return $service;
     }
 
     private function containerWithoutConfig(): ContainerInterface

@@ -7,6 +7,7 @@ A PHP library for data redaction, masking, and sanitization with optional Monolo
 This library provides a small core that can redact sensitive data in arrays and objects using pluggable rules. You can use it anywhere in your app (HTTP payloads, DTOs, database debug dumps, etc.), and optionally plug it into Monolog via a tiny bridge. For framework users, a PSR‑11 factory and a Mezzio/Laminas ConfigProvider are included.
 
 - PHP 8.2–8.5
+- Optional: `ext-intl` (for `UnicodeStartEndRule` only)
 - Optional: Monolog ^3.0 (for the bridge only)
 - Optional: Mezzio/Laminas (for auto‑wiring via ConfigProvider)
 - License: MIT
@@ -61,7 +62,7 @@ $redactor = new Redactor(
 $redactor = $redactor
     ->withReplacement('*')                 // character used to build masks
     ->withTemplate('%s')                   // safe sprintf template with exactly one plain %s
-    ->withLengthLimit(null)                // max length of the resulting masked value (null = unlimited)
+    ->withLengthLimit(null)                // max length of the resulting masked value in bytes (null = unlimited)
     ->withObjectViewMode(ObjectViewModeEnum::Copy) // Copy | PublicArray | Skip
     ->withMaxDepth(null)                   // limit recursion depth for arrays/objects (null = unlimited)
     ->withMaxItemsPerContainer(null)       // limit items per array/object (null = unlimited)
@@ -243,14 +244,15 @@ $redactor = new Redactor(customRules: [], useDefaultRules: false);
 
 These rules live under `Sirix\Redaction\Rule` and can be created directly or via factory helpers:
 
-- `StartEndRule($visibleStart, $visibleEnd)` - available via `SharedRuleFactory::startEnd($visibleStart, $visibleEnd)`. Masks the middle part of a string, keeping the given number of characters at the start/end.
+- `StartEndRule($visibleStart, $visibleEnd)` - available via `SharedRuleFactory::startEnd($visibleStart, $visibleEnd)`. Masks the middle part of a string, keeping the given number of bytes at the start/end.
 - `EmailRule` available via `SharedRuleFactory::email()`. Masks the local part of an email, keeping the first 3 characters and the full domain.
 - `PhoneRule` available via `SharedRuleFactory::phone()`. Masks digits in the middle of a phone number, keeping the first 4 and last 2 digits when possible.
 - `FullMaskRule` available via `SharedRuleFactory::fullMask()`. Replaces the entire value with the replacement character(s).
 - `FixedValueRule($replacement)` available via `SharedRuleFactory::fixedValue($replacement)`. Always outputs the provided constant string (e.g., `*` or `**/****`).
 - `NameRule` available via `SharedRuleFactory::name()`. Masks personal names leaving just initials and/or a few characters as defined by the rule.
 - `NullRule` available via `SharedRuleFactory::null()`. Sets the value to null.
-- `OffsetRule($offset)` available via `SharedRuleFactory::offset($offset)`. Masks the first N characters (from the start) according to the offset.
+- `OffsetRule($offset)` available via `SharedRuleFactory::offset($offset)`. Masks the first N bytes (from the start) according to the offset.
+- `UnicodeStartEndRule($visibleStart, $visibleEnd)` available via `SharedRuleFactory::unicodeStartEnd($visibleStart, $visibleEnd)`. Opt-in grapheme-aware variant for Unicode strings; requires `ext-intl`.
 
 ### Shared rule factory (optional)
 
@@ -269,7 +271,7 @@ $redactor = new Redactor([
 
 Default rules and helper methods return fresh rule instances, avoiding static rule caches in long-running processes.
 
-If you need a custom masking strategy, implement `RedactionRuleInterface`. Rules receive a minimal `RedactionRuleContextInterface` with rule-level options (`replacement`, `template`, and `lengthLimit`) instead of the full redactor service:
+If you need a custom masking strategy, implement `RedactionRuleInterface`. Rules receive a dedicated immutable `RedactionRuleContextInterface` snapshot with rule-level options (`replacement`, `template`, and `lengthLimit`) instead of the full redactor service:
 
 ```php
 use Sirix\Redaction\RedactionRuleContextInterface;
@@ -316,7 +318,7 @@ For local variations, use immutable `with*` methods:
 
 - `withReplacement(string $char)`: character(s) used to construct masks (default `*`).
 - `withTemplate(string $template)`: a safe `sprintf` template applied to the mask string (default `'%s'`). It must contain exactly one plain `%s`; width specifiers and multiple placeholders are rejected.
-- `withLengthLimit(?int $limit)`: if set, truncates built-in rule output to at most this length. Mask-building rules avoid creating large intermediate masks when this limit is set.
+- `withLengthLimit(?int $limit)`: if set, truncates built-in rule output to at most this many bytes. Mask-building rules avoid creating unnecessarily large intermediate masks when this limit is set. `UnicodeStartEndRule` interprets the same value as grapheme characters.
 - `withObjectViewMode(ObjectViewModeEnum $mode)`: how to represent objects during redaction. Defaults to `ObjectViewModeEnum::Skip`.
 - `withMaxDepth(?int $depth)`: maximum recursion depth for arrays/objects. `null` means unlimited.
 - `withMaxItemsPerContainer(?int $count)`: limit the number of items per array/object. When exceeded, the container is truncated and an overflow placeholder is appended if configured.
@@ -328,6 +330,24 @@ Notes:
 - These options influence built-in rules and the core traversal/limit behavior.
 - If a matched rule throws, the sensitive value is replaced with `overflowPlaceholder` or `null` when placeholders are disabled.
 - Limits apply to arrays and objects uniformly; object cycles are detected to avoid infinite recursion.
+
+## Unicode and multibyte strings
+
+The default built-in rules are byte-oriented. They use PHP byte-level operations such as `strlen()` and `substr()`, and `lengthLimit` is a byte limit. This keeps masking fast and predictable for logs, tokens, card numbers, IDs, emails, and other operational fields, but it can split multibyte UTF-8 characters when used on free text or human names.
+
+For Unicode text, use `UnicodeStartEndRule` explicitly:
+
+```php
+use Sirix\Redaction\Rule\UnicodeStartEndRule;
+
+$redactor = new Redactor([
+    'display_name' => new UnicodeStartEndRule(2, 2),
+]);
+```
+
+`UnicodeStartEndRule` uses grapheme-aware `intl` functions, so its visible counts and `lengthLimit` are measured in user-perceived characters. It requires the `intl` PHP extension and throws `LogicException` if the extension is unavailable.
+
+If you need field-specific locale behavior beyond start/end masking, provide a custom `RedactionRuleInterface` implementation.
 
 ## Testing & QA
 
@@ -341,6 +361,7 @@ This repository includes a PHPUnit test suite and tooling configs.
 ## Versioning
 
 - PHP: ~8.2.0 || ~8.3.0 || ~8.4.0 || ~8.5.0
+- Optional extension: `ext-intl` for `UnicodeStartEndRule`
 - Optional Monolog: ^3.0 (for the bridge)
 
 ## License

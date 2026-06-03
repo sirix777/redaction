@@ -23,7 +23,7 @@ use function is_object;
 use function is_scalar;
 use function sprintf;
 
-final class Redactor implements RedactionRuleContextInterface, RedactorInterface
+final class Redactor implements RedactorInterface
 {
     private const OVERFLOW_KEY = '__redaction_overflow__';
 
@@ -50,7 +50,7 @@ final class Redactor implements RedactionRuleContextInterface, RedactorInterface
 
     public function redact(mixed $rawData): mixed
     {
-        $context = RedactionContext::forObjectViewMode($this->options->objectViewMode);
+        $context = RedactionContext::forOptions($this->options);
 
         return $this->processValueCopy($rawData, $this->rules, $context);
     }
@@ -426,7 +426,7 @@ final class Redactor implements RedactionRuleContextInterface, RedactorInterface
         RedactionContext $context,
     ): ?string {
         try {
-            return $rule->apply((string) $value, $this);
+            return $rule->apply((string) $value, $context->ruleContext);
         } catch (Throwable $exception) {
             $this->onLimit('ruleException', ['key' => $key, 'exception' => $exception::class], $context);
 

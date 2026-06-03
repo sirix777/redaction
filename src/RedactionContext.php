@@ -18,15 +18,20 @@ final class RedactionContext
      */
     public ?SplObjectStorage $seenObjects;
 
-    private function __construct(ObjectViewModeEnum $objectViewMode)
-    {
+    private function __construct(
+        ObjectViewModeEnum $objectViewMode,
+        public readonly RedactionRuleContextInterface $ruleContext,
+    ) {
         $this->seenObjects = ObjectViewModeEnum::Skip === $objectViewMode
             ? null
             : new SplObjectStorage();
     }
 
-    public static function forObjectViewMode(ObjectViewModeEnum $objectViewMode): self
+    public static function forOptions(RedactorOptions $options): self
     {
-        return new self($objectViewMode);
+        return new self(
+            $options->objectViewMode,
+            RedactionRuleContext::fromOptions($options),
+        );
     }
 }

@@ -111,6 +111,20 @@ final class RuleLengthLimitTest extends TestCase
         $this->assertSame('Al***', $result['name']);
     }
 
+    public function testLengthLimitIsByteBasedForBuiltInRules(): void
+    {
+        $redactor = (new Redactor([
+            'secret' => new StartEndRule(2, 2),
+        ], false))
+            ->withLengthLimit(5)
+        ;
+
+        $result = $redactor->redact(['secret' => 'привет-мир']);
+
+        $this->assertSame('п***', $result['secret']);
+        $this->assertSame(5, strlen($result['secret']));
+    }
+
     public function testVeryLongInputWithLengthLimitReturnsBoundedResult(): void
     {
         $redactor = (new Redactor([

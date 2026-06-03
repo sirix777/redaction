@@ -11,4 +11,9 @@ return (new Configuration())
         __DIR__ . '/src/Bridge/Monolog/RedactorProcessor.php',
         [ErrorType::DEV_DEPENDENCY_IN_PROD],
     )
+    ->ignoreErrorsOnExtensionAndPath(
+        'ext-intl',
+        __DIR__ . '/src/Rule/UnicodeStartEndRule.php',
+        [ErrorType::SHADOW_DEPENDENCY],
+    )
 ;
