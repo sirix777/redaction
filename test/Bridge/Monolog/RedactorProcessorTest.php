@@ -23,14 +23,14 @@ final class RedactorProcessorTest extends TestCase
             'password' => new OffsetRule(3),
         ], false);
 
-        $processor = new RedactorProcessor($redactor);
+        $redactorProcessor = new RedactorProcessor($redactor);
 
-        $record = $this->createRecord([
+        $logRecord = $this->createRecord([
             'username' => 'alice',
             'password' => 'secret123',
         ]);
 
-        $processed = $processor($record);
+        $processed = $redactorProcessor($logRecord);
 
         $this->assertSame('sec******', $processed->context['password']);
         $this->assertSame('alice', $processed->context['username']);
@@ -43,9 +43,9 @@ final class RedactorProcessorTest extends TestCase
             'token' => new OffsetRule(4),
         ], false);
 
-        $processor = new RedactorProcessor($redactor);
+        $redactorProcessor = new RedactorProcessor($redactor);
 
-        $record = $this->createRecord([
+        $logRecord = $this->createRecord([
             'user' => [
                 'username' => 'bob',
                 'password' => 'secret123',
@@ -53,7 +53,7 @@ final class RedactorProcessorTest extends TestCase
             ],
         ]);
 
-        $processed = $processor($record);
+        $processed = $redactorProcessor($logRecord);
 
         $this->assertSame('se*******', $processed->context['user']['password']);
         $this->assertSame('abcd****', $processed->context['user']['token']);
@@ -67,9 +67,9 @@ final class RedactorProcessorTest extends TestCase
             'token' => new OffsetRule(4),
         ], false);
 
-        $processor = new RedactorProcessor($redactor);
+        $redactorProcessor = new RedactorProcessor($redactor);
 
-        $record = $this->createRecord([
+        $logRecord = $this->createRecord([
             'user' => [
                 'username' => 'bob',
                 'password' => 'secret123',
@@ -77,7 +77,7 @@ final class RedactorProcessorTest extends TestCase
             ],
         ]);
 
-        $processed = $processor($record);
+        $processed = $redactorProcessor($logRecord);
 
         $this->assertSame('se*******', $processed->context['user']['password']);
         $this->assertSame('abcd****', $processed->context['user']['token']);
@@ -99,11 +99,11 @@ final class RedactorProcessorTest extends TestCase
             ->withObjectViewMode(ObjectViewModeEnum::Copy)
         ;
 
-        $processor = new RedactorProcessor($redactor);
+        $redactorProcessor = new RedactorProcessor($redactor);
 
-        $record = $this->createRecord(['user' => $user]);
+        $logRecord = $this->createRecord(['user' => $user]);
 
-        $processed = $processor($record);
+        $processed = $redactorProcessor($logRecord);
 
         $this->assertInstanceOf(stdClass::class, $processed->context['user']);
         $this->assertSame('my****', $processed->context['user']->password);
@@ -119,13 +119,13 @@ final class RedactorProcessorTest extends TestCase
             ->withTemplate('%s(redacted)')
         ;
 
-        $processor = new RedactorProcessor($redactor);
+        $redactorProcessor = new RedactorProcessor($redactor);
 
-        $record = $this->createRecord([
+        $logRecord = $this->createRecord([
             'secret' => 'my_secret_value',
         ]);
 
-        $processed = $processor($record);
+        $processed = $redactorProcessor($logRecord);
 
         $this->assertSame('my**********(redacted)', $processed->context['secret']);
     }
@@ -146,10 +146,10 @@ final class RedactorProcessorTest extends TestCase
             ->withObjectViewMode(ObjectViewModeEnum::Copy)
         ;
 
-        $processor = new RedactorProcessor($redactor);
+        $redactorProcessor = new RedactorProcessor($redactor);
 
-        $record = $this->createRecord(['nested' => $nested]);
-        $processed = $processor($record);
+        $logRecord = $this->createRecord(['nested' => $nested]);
+        $processed = $redactorProcessor($logRecord);
 
         $this->assertSame('ab****', $processed->context['nested']->field1);
         $this->assertSame('123***', $processed->context['nested']->field2);
@@ -159,14 +159,14 @@ final class RedactorProcessorTest extends TestCase
     {
         $redactor = new Redactor([], false);
 
-        $processor = new RedactorProcessor($redactor);
+        $redactorProcessor = new RedactorProcessor($redactor);
 
-        $record = $this->createRecord([
+        $logRecord = $this->createRecord([
             'password' => 'mypassword',
             'token' => 'abcd',
         ]);
 
-        $processed = $processor($record);
+        $processed = $redactorProcessor($logRecord);
 
         $this->assertSame('mypassword', $processed->context['password']);
         $this->assertSame('abcd', $processed->context['token']);

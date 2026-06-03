@@ -26,19 +26,19 @@ class AbstractStartEndRule
         }
     }
 
-    public function apply(string $value, RedactionRuleContextInterface $context): string
+    public function apply(string $value, RedactionRuleContextInterface $redactionRuleContext): string
     {
         $length = strlen($value);
         if (0 === $length) {
             return $value;
         }
 
-        $limit = $context->getLengthLimit();
+        $limit = $redactionRuleContext->getLengthLimit();
 
         if ($length <= $this->visibleStart + $this->visibleEnd) {
             $prefix = substr($value, 0, 1);
             $maxMaskBytes = null === $limit ? null : max(0, $limit - strlen($prefix));
-            $result = $prefix . $this->repeatMask($context->getReplacement(), $length - 1, $maxMaskBytes);
+            $result = $prefix . $this->repeatMask($redactionRuleContext->getReplacement(), $length - 1, $maxMaskBytes);
 
             if (null !== $limit) {
                 return substr($result, 0, $limit);
@@ -51,11 +51,11 @@ class AbstractStartEndRule
         $visibleEnd = min($this->visibleEnd, $length - $visibleStart);
         $hiddenLength = max(0, $length - $visibleStart - $visibleEnd);
         $prefix = substr($value, 0, $visibleStart);
-        $isDefaultTemplate = self::DEFAULT_TEMPLATE === $context->getTemplate();
+        $isDefaultTemplate = self::DEFAULT_TEMPLATE === $redactionRuleContext->getTemplate();
         $maxMaskBytes = null === $limit ? null : max(0, $limit - strlen($prefix));
 
-        $hidden = $this->repeatMask($context->getReplacement(), $hiddenLength, $maxMaskBytes);
-        $placeholder = sprintf($context->getTemplate(), $hidden);
+        $hidden = $this->repeatMask($redactionRuleContext->getReplacement(), $hiddenLength, $maxMaskBytes);
+        $placeholder = sprintf($redactionRuleContext->getTemplate(), $hidden);
 
         $result = $prefix . $placeholder;
 

@@ -14,12 +14,12 @@ use function substr;
 
 final class FullMaskRule implements RedactionRuleInterface
 {
-    public function apply(string $value, RedactionRuleContextInterface $context): string
+    public function apply(string $value, RedactionRuleContextInterface $redactionRuleContext): string
     {
         $length = strlen($value);
-        $limit = $context->getLengthLimit();
+        $limit = $redactionRuleContext->getLengthLimit();
 
-        return $this->repeatMask($context->getReplacement(), $length, $limit);
+        return $this->repeatMask($redactionRuleContext->getReplacement(), $length, $limit);
     }
 
     private function repeatMask(string $replacement, int $repeatCount, ?int $maxBytes = null): string

@@ -16,8 +16,8 @@ final class NameRuleTest extends TestCase
 
     public function testNameRedaction(): void
     {
-        $rule = new NameRule();
-        $redactor = new Redactor(['name' => $rule], false);
+        $nameRule = new NameRule();
+        $redactor = new Redactor(['name' => $nameRule], false);
         $processed = $redactor->redact($this->convertNested(['name' => 'John']));
 
         $this->assertSame('Jo***n', $processed['name']);
@@ -25,8 +25,8 @@ final class NameRuleTest extends TestCase
 
     public function testLongNameRedaction(): void
     {
-        $rule = new NameRule();
-        $redactor = new Redactor(['name' => $rule], false);
+        $nameRule = new NameRule();
+        $redactor = new Redactor(['name' => $nameRule], false);
         $processed = $redactor->redact($this->convertNested(['name' => 'Alexander']));
 
         $this->assertSame('Al***r', $processed['name']);
@@ -34,8 +34,8 @@ final class NameRuleTest extends TestCase
 
     public function testMultipleNamesRedaction(): void
     {
-        $rule = new NameRule();
-        $redactor = new Redactor(['fullname' => $rule], false);
+        $nameRule = new NameRule();
+        $redactor = new Redactor(['fullname' => $nameRule], false);
         $processed = $redactor->redact($this->convertNested(['fullname' => 'John Doe Smith']));
 
         $this->assertSame('Jo***n Do***e Sm***h', $processed['fullname']);
@@ -43,10 +43,10 @@ final class NameRuleTest extends TestCase
 
     public function testNameRedactionInNestedStructures(): void
     {
-        $rule = new NameRule();
+        $nameRule = new NameRule();
         $redactor = (new Redactor(
             [
-                'name' => $rule,
+                'name' => $nameRule,
             ],
             false
         ))
@@ -66,8 +66,8 @@ final class NameRuleTest extends TestCase
 
     public function testTooShortName(): void
     {
-        $rule = new NameRule();
-        $redactor = new Redactor(['name' => $rule], false);
+        $nameRule = new NameRule();
+        $redactor = new Redactor(['name' => $nameRule], false);
         $processed = $redactor->redact($this->convertNested(['name' => 'Jo']));
 
         $this->assertSame('J*', $processed['name']);

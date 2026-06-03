@@ -24,7 +24,7 @@ final class RedactorLongRunningSafetyTest extends TestCase
         $events = [];
         $redactor = (new Redactor([
             'boom' => new class implements RedactionRuleInterface {
-                public function apply(string $value, RedactionRuleContextInterface $context): ?string
+                public function apply(string $value, RedactionRuleContextInterface $redactionRuleContext): ?string
                 {
                     throw new RuntimeException('boom');
                 }
@@ -49,7 +49,7 @@ final class RedactorLongRunningSafetyTest extends TestCase
     {
         $redactor = (new Redactor([
             'boom' => new class implements RedactionRuleInterface {
-                public function apply(string $value, RedactionRuleContextInterface $context): ?string
+                public function apply(string $value, RedactionRuleContextInterface $redactionRuleContext): ?string
                 {
                     throw new RuntimeException('boom: ' . $value);
                 }
@@ -85,12 +85,14 @@ final class RedactorLongRunningSafetyTest extends TestCase
             public ?string $contextClass = null;
             public ?bool $contextIsRedactor = null;
 
-            public function apply(string $value, RedactionRuleContextInterface $context): string
+            public function apply(string $value, RedactionRuleContextInterface $redactionRuleContext): string
             {
-                $this->contextClass = $context::class;
-                $this->contextIsRedactor = method_exists($context, 'redact');
+                $this->contextClass = $redactionRuleContext::class;
+                $this->contextIsRedactor = method_exists($redactionRuleContext, 'redact');
 
-                return $context->getReplacement() . $context->getTemplate() . $context->getLengthLimit();
+                return $redactionRuleContext->getReplacement()
+                    . $redactionRuleContext->getTemplate()
+                    . $redactionRuleContext->getLengthLimit();
             }
         };
 
@@ -124,7 +126,7 @@ final class RedactorLongRunningSafetyTest extends TestCase
         }) implements RedactionRuleInterface {
             public function __construct(private readonly Closure $callback) {}
 
-            public function apply(string $value, RedactionRuleContextInterface $context): string
+            public function apply(string $value, RedactionRuleContextInterface $redactionRuleContext): string
             {
                 ($this->callback)();
 
@@ -189,10 +191,10 @@ final class RedactorLongRunningSafetyTest extends TestCase
 
     public function testWithersDoNotMutateOriginalSharedInstance(): void
     {
-        $shared = new Redactor([], false);
-        $copyMode = $shared->withObjectViewMode(ObjectViewModeEnum::Copy);
+        $redactor = new Redactor([], false);
+        $copyMode = $redactor->withObjectViewMode(ObjectViewModeEnum::Copy);
 
-        $this->assertSame(ObjectViewModeEnum::Skip, $shared->getObjectViewMode());
+        $this->assertSame(ObjectViewModeEnum::Skip, $redactor->getObjectViewMode());
         $this->assertSame(ObjectViewModeEnum::Copy, $copyMode->getObjectViewMode());
     }
 }

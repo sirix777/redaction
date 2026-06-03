@@ -33,35 +33,35 @@ final class RedactorFactory
      */
     public function __invoke(ContainerInterface $container): RedactorInterface
     {
-        $resolver = ContainerResolver::forFactory($container, self::class);
-        $config = ConfigReader::fromContainer($resolver);
+        $containerResolver = ContainerResolver::forFactory($container, self::class);
+        $configReader = ConfigReader::fromContainer($containerResolver);
 
-        $rules = $config->array('redactor.options.rules', []);
+        $rules = $configReader->array('redactor.options.rules', []);
         $this->assertRules($rules);
 
-        $callback = $this->nullableCallable($config, 'redactor.options.on_limit_exceeded_callback');
-        $placeholder = $this->nullableString($config, 'redactor.options.overflow_placeholder', '...');
+        $callback = $this->nullableCallable($configReader, 'redactor.options.on_limit_exceeded_callback');
+        $placeholder = $this->nullableString($configReader, 'redactor.options.overflow_placeholder', '...');
 
-        $options = new RedactorOptions(
-            replacement: $config->string('redactor.options.replacement', '*'),
-            template: $this->template($config, 'redactor.options.template'),
-            lengthLimit: $this->nullableInt($config, 'redactor.options.length_limit'),
-            objectViewMode: $config->enum(
+        $redactorOptions = new RedactorOptions(
+            replacement: $configReader->string('redactor.options.replacement', '*'),
+            template: $this->template($configReader, 'redactor.options.template'),
+            lengthLimit: $this->nullableInt($configReader, 'redactor.options.length_limit'),
+            objectViewMode: $configReader->enum(
                 'redactor.options.object_view_mode',
                 ObjectViewModeEnum::class,
                 ObjectViewModeEnum::Skip,
             ),
-            maxDepth: $this->nullableInt($config, 'redactor.options.max_depth'),
-            maxItemsPerContainer: $this->nullableInt($config, 'redactor.options.max_items_per_container'),
-            maxTotalNodes: $this->nullableInt($config, 'redactor.options.max_total_nodes'),
+            maxDepth: $this->nullableInt($configReader, 'redactor.options.max_depth'),
+            maxItemsPerContainer: $this->nullableInt($configReader, 'redactor.options.max_items_per_container'),
+            maxTotalNodes: $this->nullableInt($configReader, 'redactor.options.max_total_nodes'),
             onLimitExceededCallback: $callback,
             overflowPlaceholder: $placeholder,
         );
 
         return new Redactor(
             customRules: $rules,
-            useDefaultRules: $config->bool('redactor.options.use_default_rules', true),
-            options: $options,
+            useDefaultRules: $configReader->bool('redactor.options.use_default_rules', true),
+            redactorOptions: $redactorOptions,
         );
     }
 
@@ -96,13 +96,13 @@ final class RedactorFactory
     /**
      * @throws InvalidConfigValueException
      */
-    private function nullableInt(ConfigReader $config, string $path): ?int
+    private function nullableInt(ConfigReader $configReader, string $path): ?int
     {
-        if (! $config->has($path)) {
+        if (! $configReader->has($path)) {
             return null;
         }
 
-        $value = $config->get($path);
+        $value = $configReader->get($path);
         if (null === $value) {
             return null;
         }
@@ -121,9 +121,9 @@ final class RedactorFactory
     /**
      * @throws InvalidConfigValueException
      */
-    private function template(ConfigReader $config, string $path): string
+    private function template(ConfigReader $configReader, string $path): string
     {
-        $template = $config->string($path, '%s');
+        $template = $configReader->string($path, '%s');
         if (1 !== substr_count($template, '%s') || preg_match('/%(?!s)/', $template)) {
             throw InvalidConfigValueException::forType(
                 $path,
@@ -139,13 +139,13 @@ final class RedactorFactory
     /**
      * @throws InvalidConfigValueException
      */
-    private function nullableCallable(ConfigReader $config, string $path): ?callable
+    private function nullableCallable(ConfigReader $configReader, string $path): ?callable
     {
-        if (! $config->has($path)) {
+        if (! $configReader->has($path)) {
             return null;
         }
 
-        $value = $config->get($path);
+        $value = $configReader->get($path);
         if (null === $value || is_callable($value)) {
             return $value;
         }
@@ -156,13 +156,13 @@ final class RedactorFactory
     /**
      * @throws InvalidConfigValueException
      */
-    private function nullableString(ConfigReader $config, string $path, ?string $default = null): ?string
+    private function nullableString(ConfigReader $configReader, string $path, ?string $default = null): ?string
     {
-        if (! $config->has($path)) {
+        if (! $configReader->has($path)) {
             return $default;
         }
 
-        $value = $config->get($path);
+        $value = $configReader->get($path);
         if (null === $value || is_string($value)) {
             return $value;
         }

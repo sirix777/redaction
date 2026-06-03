@@ -20,7 +20,7 @@ final class RedactorOptionsTest extends TestCase
                 'password' => new OffsetRule(2),
             ],
             useDefaultRules: false,
-            options: new RedactorOptions(
+            redactorOptions: new RedactorOptions(
                 replacement: '#',
                 lengthLimit: 5,
                 objectViewMode: ObjectViewModeEnum::Copy,
@@ -42,10 +42,10 @@ final class RedactorOptionsTest extends TestCase
 
     public function testWithersReturnNewOptionsInstance(): void
     {
-        $options = new RedactorOptions();
-        $changed = $options->withMaxDepth(2);
+        $redactorOptions = new RedactorOptions();
+        $changed = $redactorOptions->withMaxDepth(2);
 
-        $this->assertNull($options->maxDepth);
+        $this->assertNull($redactorOptions->maxDepth);
         $this->assertSame(2, $changed->maxDepth);
     }
 

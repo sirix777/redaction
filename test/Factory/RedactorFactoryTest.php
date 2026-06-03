@@ -24,8 +24,8 @@ final class RedactorFactoryTest extends TestCase
      */
     public function testCreatesRedactorWithDefaultsWhenNoConfig(): void
     {
-        $factory = new RedactorFactory();
-        $service = $factory($this->containerWithoutConfig());
+        $redactorFactory = new RedactorFactory();
+        $service = $redactorFactory($this->containerWithoutConfig());
 
         $this->assertInstanceOf(RedactorInterface::class, $service);
         $service = $this->assertRedactor($service);
@@ -47,8 +47,8 @@ final class RedactorFactoryTest extends TestCase
     public function testAppliesStrictlyTypedOptions(): void
     {
         $callback = static function(array $info): void {};
-        $factory = new RedactorFactory();
-        $service = $factory($this->containerWithConfig([
+        $redactorFactory = new RedactorFactory();
+        $service = $redactorFactory($this->containerWithConfig([
             'redactor' => [
                 'options' => [
                     'rules' => [
@@ -87,8 +87,8 @@ final class RedactorFactoryTest extends TestCase
      */
     public function testAcceptsObjectViewModeAsStringBackedValue(): void
     {
-        $factory = new RedactorFactory();
-        $service = $factory($this->containerWithConfig([
+        $redactorFactory = new RedactorFactory();
+        $service = $redactorFactory($this->containerWithConfig([
             'redactor' => [
                 'options' => [
                     'object_view_mode' => 'copy',
@@ -106,8 +106,8 @@ final class RedactorFactoryTest extends TestCase
      */
     public function testAllowsNullForNullableOptions(): void
     {
-        $factory = new RedactorFactory();
-        $service = $factory($this->containerWithConfig([
+        $redactorFactory = new RedactorFactory();
+        $service = $redactorFactory($this->containerWithConfig([
             'redactor' => [
                 'options' => [
                     'length_limit' => null,
@@ -321,11 +321,11 @@ final class RedactorFactoryTest extends TestCase
         (new RedactorFactory())($this->containerWithConfig('not-an-array'));
     }
 
-    private function assertRedactor(RedactorInterface $service): Redactor
+    private function assertRedactor(RedactorInterface $redactor): Redactor
     {
-        $this->assertInstanceOf(Redactor::class, $service);
+        $this->assertInstanceOf(Redactor::class, $redactor);
 
-        return $service;
+        return $redactor;
     }
 
     private function containerWithoutConfig(): ContainerInterface

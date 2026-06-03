@@ -17,15 +17,15 @@ final class EmailRule extends AbstractStartEndRule implements RedactionRuleInter
         parent::__construct(3, 4);
     }
 
-    public function apply(string $value, RedactionRuleContextInterface $context): string
+    public function apply(string $value, RedactionRuleContextInterface $redactionRuleContext): string
     {
         $atPosition = strpos($value, '@');
         if (false === $atPosition || $atPosition < 3) {
-            return parent::apply($value, $context);
+            return parent::apply($value, $redactionRuleContext);
         }
 
         $maskedPrefix = substr($value, 0, 3) . '****';
-        $limit = $context->getLengthLimit();
+        $limit = $redactionRuleContext->getLengthLimit();
         if (null === $limit) {
             return $maskedPrefix . substr($value, $atPosition);
         }

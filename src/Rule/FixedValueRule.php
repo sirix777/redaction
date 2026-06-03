@@ -10,7 +10,7 @@ final readonly class FixedValueRule implements RedactionRuleInterface
 {
     public function __construct(private string $value) {}
 
-    public function apply(string $value, RedactionRuleContextInterface $context): string
+    public function apply(string $value, RedactionRuleContextInterface $redactionRuleContext): string
     {
         return $this->value;
     }

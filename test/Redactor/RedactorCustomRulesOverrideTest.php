@@ -14,7 +14,7 @@ final class RedactorCustomRulesOverrideTest extends TestCase
     public function testCustomRulesOverrideDefaultsWhenKeysOverlap(): void
     {
         $customEmailRule = new class implements RedactionRuleInterface {
-            public function apply(string $value, RedactionRuleContextInterface $context): string
+            public function apply(string $value, RedactionRuleContextInterface $redactionRuleContext): string
             {
                 return 'CUSTOM_EMAIL_MASK';
             }

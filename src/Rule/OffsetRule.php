@@ -19,21 +19,21 @@ final readonly class OffsetRule implements RedactionRuleInterface
 {
     public function __construct(private int $offset) {}
 
-    public function apply(string $value, RedactionRuleContextInterface $context): string
+    public function apply(string $value, RedactionRuleContextInterface $redactionRuleContext): string
     {
         $length = strlen($value);
         if (0 === $length) {
             return $value;
         }
 
-        $limit = $context->getLengthLimit();
+        $limit = $redactionRuleContext->getLengthLimit();
         $visible = $this->offset >= 0
             ? substr($value, 0, $this->offset)
             : substr($value, $this->offset);
         $hiddenLength = max(0, $length - abs($this->offset));
         $maxMaskBytes = null === $limit ? null : max(0, $limit - strlen($visible));
-        $hidden = $this->repeatMask($context->getReplacement(), $hiddenLength, $maxMaskBytes);
-        $placeholder = sprintf($context->getTemplate(), $hidden);
+        $hidden = $this->repeatMask($redactionRuleContext->getReplacement(), $hiddenLength, $maxMaskBytes);
+        $placeholder = sprintf($redactionRuleContext->getTemplate(), $hidden);
 
         $result = $this->offset >= 0
             ? $visible . $placeholder

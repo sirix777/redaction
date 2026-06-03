@@ -80,13 +80,13 @@ final readonly class RedactorOptions
         );
     }
 
-    public function withObjectViewMode(ObjectViewModeEnum $objectViewMode): self
+    public function withObjectViewMode(ObjectViewModeEnum $objectViewModeEnum): self
     {
         return new self(
             replacement: $this->replacement,
             template: $this->template,
             lengthLimit: $this->lengthLimit,
-            objectViewMode: $objectViewMode,
+            objectViewMode: $objectViewModeEnum,
             maxDepth: $this->maxDepth,
             maxItemsPerContainer: $this->maxItemsPerContainer,
             maxTotalNodes: $this->maxTotalNodes,

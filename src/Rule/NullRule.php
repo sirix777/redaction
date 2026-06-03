@@ -8,7 +8,7 @@ use Sirix\Redaction\RedactionRuleContextInterface;
 
 final class NullRule implements RedactionRuleInterface
 {
-    public function apply(string $value, RedactionRuleContextInterface $context): ?string
+    public function apply(string $value, RedactionRuleContextInterface $redactionRuleContext): ?string
     {
         return null;
     }

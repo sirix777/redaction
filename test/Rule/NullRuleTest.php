@@ -16,8 +16,8 @@ final class NullRuleTest extends TestCase
 
     public function testNullRule(): void
     {
-        $rule = new NullRule();
-        $redactor = new Redactor(['password' => $rule], false);
+        $nullRule = new NullRule();
+        $redactor = new Redactor(['password' => $nullRule], false);
         $processed = $redactor->redact($this->convertNested(['password' => 'secret123']));
 
         $this->assertNull($processed['password']);

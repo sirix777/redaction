@@ -8,12 +8,12 @@ final readonly class RedactionRuleContext implements RedactionRuleContextInterfa
 {
     public function __construct(private string $replacement, private string $template, private ?int $lengthLimit) {}
 
-    public static function fromOptions(RedactorOptions $options): self
+    public static function fromOptions(RedactorOptions $redactorOptions): self
     {
         return new self(
-            replacement: $options->replacement,
-            template: $options->template,
-            lengthLimit: $options->lengthLimit,
+            replacement: $redactorOptions->replacement,
+            template: $redactorOptions->template,
+            lengthLimit: $redactorOptions->lengthLimit,
         );
     }
 

@@ -52,8 +52,8 @@ final class UnicodeStartEndRuleTest extends TestCase
 
     public function testSharedRuleFactoryCreatesUnicodeStartEndRule(): void
     {
-        $rule = SharedRuleFactory::unicodeStartEnd(1, 1);
-        $redactor = new Redactor(['secret' => $rule], false);
+        $redactionRule = SharedRuleFactory::unicodeStartEnd(1, 1);
+        $redactor = new Redactor(['secret' => $redactionRule], false);
 
         $this->assertSame('п****т', $redactor->redact(['secret' => 'привет'])['secret']);
     }

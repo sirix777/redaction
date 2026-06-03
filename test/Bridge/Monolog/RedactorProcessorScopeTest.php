@@ -16,11 +16,11 @@ final class RedactorProcessorScopeTest extends TestCase
 {
     public function testProcessorOnlyRedactsContext(): void
     {
-        $processor = new RedactorProcessor(new Redactor([
+        $redactorProcessor = new RedactorProcessor(new Redactor([
             'password' => new OffsetRule(2),
         ], false));
 
-        $record = new LogRecord(
+        $logRecord = new LogRecord(
             datetime: new DateTimeImmutable(),
             channel: 'test',
             level: Level::Info,
@@ -29,7 +29,7 @@ final class RedactorProcessorScopeTest extends TestCase
             extra: ['password' => 'secret'],
         );
 
-        $processed = $processor($record);
+        $processed = $redactorProcessor($logRecord);
 
         $this->assertSame('se****', $processed->context['password']);
         $this->assertSame('password=secret', $processed->message);

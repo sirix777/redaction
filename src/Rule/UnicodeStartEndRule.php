@@ -29,7 +29,7 @@ final readonly class UnicodeStartEndRule implements RedactionRuleInterface
         }
     }
 
-    public function apply(string $value, RedactionRuleContextInterface $context): string
+    public function apply(string $value, RedactionRuleContextInterface $redactionRuleContext): string
     {
         $this->assertIntlAvailable();
 
@@ -40,21 +40,25 @@ final readonly class UnicodeStartEndRule implements RedactionRuleInterface
 
         if ($length <= $this->visibleStart + $this->visibleEnd) {
             return $this->substring($value, 0, 1)
-                . $this->repeatMask($context->getReplacement(), $length - 1, $context->getLengthLimit());
+                . $this->repeatMask(
+                    $redactionRuleContext->getReplacement(),
+                    $length - 1,
+                    $redactionRuleContext->getLengthLimit()
+                );
         }
 
         $visibleStart = min($this->visibleStart, $length);
         $visibleEnd = min($this->visibleEnd, $length - $visibleStart);
         $hiddenLength = max(0, $length - $visibleStart - $visibleEnd);
         $prefix = $this->substring($value, 0, $visibleStart);
-        $limit = $context->getLengthLimit();
+        $limit = $redactionRuleContext->getLengthLimit();
         $maxMaskCharacters = null === $limit ? null : max(0, $limit - $this->length($prefix));
-        $hidden = $this->repeatMask($context->getReplacement(), $hiddenLength, $maxMaskCharacters);
-        $placeholder = sprintf($context->getTemplate(), $hidden);
+        $hidden = $this->repeatMask($redactionRuleContext->getReplacement(), $hiddenLength, $maxMaskCharacters);
+        $placeholder = sprintf($redactionRuleContext->getTemplate(), $hidden);
 
         $result = $prefix . $placeholder;
 
-        if (self::DEFAULT_TEMPLATE === $context->getTemplate()
+        if (self::DEFAULT_TEMPLATE === $redactionRuleContext->getTemplate()
             && $visibleEnd > 0
             && (null === $limit || $this->length($result) < $limit)
         ) {

@@ -80,6 +80,7 @@
     "normalize": "@composer bin composer-normalize normalize --diff ../../composer.json",
     "phpstan": "php tools/phpstan/vendor/bin/phpstan analyse -c phpstan.neon --memory-limit=1G",
     "rector": "php tools/rector/vendor/bin/rector process --dry-run --xdebug --memory-limit=1G",
+    "rector-fix": "php tools/rector/vendor/bin/rector process --xdebug --memory-limit=1G",
     "test": "phpunit --colors=always --testdox"
   }
 }

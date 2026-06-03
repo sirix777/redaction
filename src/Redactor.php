@@ -31,18 +31,23 @@ final class Redactor implements RedactorInterface
      * @var array<string, RedactionRuleInterface>
      */
     private array $rules = [];
-    private RedactorOptions $options;
+    private RedactorOptions $redactorOptions;
 
     /**
      * @param array<string, mixed> $customRules
      */
-    public function __construct(array $customRules = [], bool $useDefaultRules = true, ?RedactorOptions $options = null)
-    {
-        $this->options = $options ?? new RedactorOptions();
+    public function __construct(
+        array $customRules = [],
+        bool $useDefaultRules = true,
+        ?RedactorOptions $redactorOptions = null
+    ) {
+        $this->redactorOptions = $redactorOptions ?? new RedactorOptions();
         $this->rules = $useDefaultRules ? $this->loadDefaultRules() : [];
         foreach ($customRules as $key => $rule) {
             if (! $rule instanceof RedactionRuleInterface) {
-                throw new InvalidArgumentException('All sensitive keys must be instances of RedactionRuleInterface');
+                throw new InvalidArgumentException(
+                    'All sensitive keys must be instances of RedactionRuleInterface'
+                );
             }
             $this->rules[$key] = $rule;
         }
@@ -50,105 +55,105 @@ final class Redactor implements RedactorInterface
 
     public function redact(mixed $rawData): mixed
     {
-        $context = RedactionContext::forOptions($this->options);
+        $redactionContext = RedactionContext::forOptions($this->redactorOptions);
 
-        return $this->processValueCopy($rawData, $this->rules, $context);
+        return $this->processValueCopy($rawData, $this->rules, $redactionContext);
     }
 
     public function withReplacement(string $replacement): self
     {
-        return $this->withOptions($this->options->withReplacement($replacement));
+        return $this->withOptions($this->redactorOptions->withReplacement($replacement));
     }
 
     public function getReplacement(): string
     {
-        return $this->options->replacement;
+        return $this->redactorOptions->replacement;
     }
 
     public function withTemplate(string $template): self
     {
-        return $this->withOptions($this->options->withTemplate($template));
+        return $this->withOptions($this->redactorOptions->withTemplate($template));
     }
 
     public function getTemplate(): string
     {
-        return $this->options->template;
+        return $this->redactorOptions->template;
     }
 
     public function withLengthLimit(?int $lengthLimit): self
     {
-        return $this->withOptions($this->options->withLengthLimit($lengthLimit));
+        return $this->withOptions($this->redactorOptions->withLengthLimit($lengthLimit));
     }
 
     public function getLengthLimit(): ?int
     {
-        return $this->options->lengthLimit;
+        return $this->redactorOptions->lengthLimit;
     }
 
-    public function withObjectViewMode(ObjectViewModeEnum $mode): self
+    public function withObjectViewMode(ObjectViewModeEnum $objectViewModeEnum): self
     {
-        return $this->withOptions($this->options->withObjectViewMode($mode));
+        return $this->withOptions($this->redactorOptions->withObjectViewMode($objectViewModeEnum));
     }
 
     public function getObjectViewMode(): ObjectViewModeEnum
     {
-        return $this->options->objectViewMode;
+        return $this->redactorOptions->objectViewMode;
     }
 
     public function withMaxDepth(?int $depth): self
     {
-        return $this->withOptions($this->options->withMaxDepth($depth));
+        return $this->withOptions($this->redactorOptions->withMaxDepth($depth));
     }
 
     public function getMaxDepth(): ?int
     {
-        return $this->options->maxDepth;
+        return $this->redactorOptions->maxDepth;
     }
 
     public function withMaxItemsPerContainer(?int $count): self
     {
-        return $this->withOptions($this->options->withMaxItemsPerContainer($count));
+        return $this->withOptions($this->redactorOptions->withMaxItemsPerContainer($count));
     }
 
     public function getMaxItemsPerContainer(): ?int
     {
-        return $this->options->maxItemsPerContainer;
+        return $this->redactorOptions->maxItemsPerContainer;
     }
 
     public function withMaxTotalNodes(?int $count): self
     {
-        return $this->withOptions($this->options->withMaxTotalNodes($count));
+        return $this->withOptions($this->redactorOptions->withMaxTotalNodes($count));
     }
 
     public function getMaxTotalNodes(): ?int
     {
-        return $this->options->maxTotalNodes;
+        return $this->redactorOptions->maxTotalNodes;
     }
 
     public function withOnLimitExceededCallback(?callable $callback): self
     {
-        return $this->withOptions($this->options->withOnLimitExceededCallback($callback));
+        return $this->withOptions($this->redactorOptions->withOnLimitExceededCallback($callback));
     }
 
     public function getOnLimitExceededCallback(): ?callable
     {
-        return $this->options->onLimitExceededCallback();
+        return $this->redactorOptions->onLimitExceededCallback();
     }
 
     public function withOverflowPlaceholder(?string $value): self
     {
-        return $this->withOptions($this->options->withOverflowPlaceholder($value));
+        return $this->withOptions($this->redactorOptions->withOverflowPlaceholder($value));
     }
 
     public function getOverflowPlaceholder(): ?string
     {
-        return $this->options->overflowPlaceholder;
+        return $this->redactorOptions->overflowPlaceholder;
     }
 
-    private function withOptions(RedactorOptions $options): self
+    private function withOptions(RedactorOptions $redactorOptions): self
     {
         $clone = clone $this;
-        $clone->options = $options;
+        $clone->redactorOptions = $redactorOptions;
 
         return $clone;
     }
@@ -156,24 +161,24 @@ final class Redactor implements RedactorInterface
     /**
      * @param array<string, RedactionRuleInterface> $rules
      */
-    private function processValueCopy(mixed $value, array $rules, RedactionContext $context): mixed
+    private function processValueCopy(mixed $value, array $rules, RedactionContext $redactionContext): mixed
     {
         if (is_array($value)) {
-            if (! $this->enterDepth($context)) {
-                $this->onLimit('maxDepth', ['kind' => 'array'], $context);
+            if (! $this->enterDepth($redactionContext)) {
+                $this->onLimit('maxDepth', ['kind' => 'array'], $redactionContext);
 
                 return $this->overflowValue();
             }
 
             try {
-                return $this->processContainerCopy($value, $rules, $context);
+                return $this->processContainerCopy($value, $rules, $redactionContext);
             } finally {
-                $this->leaveDepth($context);
+                $this->leaveDepth($redactionContext);
             }
         }
 
         if (is_object($value) && $this->shouldProcessObject($value)) {
-            return $this->processObjectCopy($value, $rules, $context);
+            return $this->processObjectCopy($value, $rules, $redactionContext);
         }
 
         return $value;
@@ -190,19 +195,22 @@ final class Redactor implements RedactorInterface
      *
      * @return array<mixed>
      */
-    private function processContainerCopy(array $array, array $rules, RedactionContext $context): array
+    private function processContainerCopy(array $array, array $rules, RedactionContext $redactionContext): array
     {
         $result = null;
         $count = 0;
 
         foreach ($array as $key => $item) {
-            if ($context->totalNodeLimitExceeded || $this->hitContainerItemLimit($count, $key, $context)) {
+            if (
+                $redactionContext->totalNodeLimitExceeded
+                || $this->hitContainerItemLimit($count, $key, $redactionContext)
+            ) {
                 $truncated = $result ?? array_slice($array, 0, $count, true);
 
                 return $this->appendOverflowPlaceholder($truncated, $array);
             }
 
-            $processedItem = $this->processChildCopy($key, $item, $rules, $context);
+            $processedItem = $this->processChildCopy($key, $item, $rules, $redactionContext);
 
             if ($processedItem !== $item && null === $result) {
                 $result = array_slice($array, 0, $count, true);
@@ -214,8 +222,11 @@ final class Redactor implements RedactorInterface
 
             ++$count;
 
-            if ($this->hasExceededTotalNodeLimit($context) && $count < count($array)) {
-                return $this->appendOverflowPlaceholder($result ?? array_slice($array, 0, $count, true), $array);
+            if ($this->hasExceededTotalNodeLimit($redactionContext) && $count < count($array)) {
+                return $this->appendOverflowPlaceholder(
+                    $result ?? array_slice($array, 0, $count, true),
+                    $array
+                );
             }
         }
 
@@ -225,43 +236,55 @@ final class Redactor implements RedactorInterface
     /**
      * @param array<string, RedactionRuleInterface> $rules
      */
-    private function processObjectCopy(object $object, array $rules, RedactionContext $context): mixed
+    private function processObjectCopy(object $object, array $rules, RedactionContext $redactionContext): mixed
     {
-        if (ObjectViewModeEnum::Skip === $this->options->objectViewMode) {
+        if (ObjectViewModeEnum::Skip === $this->redactorOptions->objectViewMode) {
             return sprintf('[object %s]', get_debug_type($object));
         }
 
-        if ($this->shouldSkipObject($object, $context)) {
+        if ($this->shouldSkipObject($object, $redactionContext)) {
             return $this->overflowValue();
         }
 
-        $context->seenObjects?->offsetSet($object, true);
-        ++$context->currentDepth;
+        $redactionContext->seenObjects?->offsetSet($object, true);
+        ++$redactionContext->currentDepth;
 
         try {
-            if (ObjectViewModeEnum::PublicArray === $this->options->objectViewMode) {
-                [$properties] = $this->processObjectPropertiesCopy($object, $rules, $context, false);
+            if (ObjectViewModeEnum::PublicArray === $this->redactorOptions->objectViewMode) {
+                [$properties] = $this->processObjectPropertiesCopy(
+                    $object,
+                    $rules,
+                    $redactionContext,
+                    false
+                );
 
                 return $properties;
             }
 
-            return $this->processFullObjectCopy($object, $rules, $context);
+            return $this->processFullObjectCopy($object, $rules, $redactionContext);
         } finally {
-            --$context->currentDepth;
-            $context->seenObjects?->offsetUnset($object);
+            --$redactionContext->currentDepth;
+            $redactionContext->seenObjects?->offsetUnset($object);
         }
     }
 
-    private function shouldSkipObject(object $object, RedactionContext $context): bool
+    private function shouldSkipObject(object $object, RedactionContext $redactionContext): bool
     {
-        if ($context->seenObjects?->offsetExists($object)) {
-            $this->onLimit('cycle', ['class' => get_debug_type($object)], $context);
+        if ($redactionContext->seenObjects?->offsetExists($object)) {
+            $this->onLimit('cycle', ['class' => get_debug_type($object)], $redactionContext);
 
             return true;
         }
 
-        if ($this->shouldStopForDepth($context)) {
-            $this->onLimit('maxDepth', ['kind' => 'object', 'class' => get_debug_type($object)], $context);
+        if ($this->shouldStopForDepth($redactionContext)) {
+            $this->onLimit(
+                'maxDepth',
+                [
+                    'kind' => 'object',
+                    'class' => get_debug_type($object),
+                ],
+                $redactionContext
+            );
 
             return true;
         }
@@ -272,9 +295,9 @@ final class Redactor implements RedactorInterface
     /**
      * @param array<string, RedactionRuleInterface> $rules
      */
-    private function processFullObjectCopy(object $object, array $rules, RedactionContext $context): object
+    private function processFullObjectCopy(object $object, array $rules, RedactionContext $redactionContext): object
     {
-        [$properties] = $this->processObjectPropertiesCopy($object, $rules, $context, true);
+        [$properties] = $this->processObjectPropertiesCopy($object, $rules, $redactionContext, true);
 
         $copy = new stdClass();
         foreach ($properties as $name => $value) {
@@ -292,7 +315,7 @@ final class Redactor implements RedactorInterface
     private function processObjectPropertiesCopy(
         object $object,
         array $rules,
-        RedactionContext $context,
+        RedactionContext $redactionContext,
         bool $includeNonPublic,
     ): array {
         $result = [];
@@ -302,19 +325,22 @@ final class Redactor implements RedactorInterface
 
         $publicProperties = get_object_vars($object);
         foreach ($publicProperties as $name => $value) {
-            if ($context->totalNodeLimitExceeded || $this->hitContainerItemLimit($count, $name, $context)) {
+            if (
+                $redactionContext->totalNodeLimitExceeded
+                || $this->hitContainerItemLimit($count, $name, $redactionContext)
+            ) {
                 $this->appendObjectOverflowPlaceholder($result);
                 $truncated = true;
 
                 break;
             }
 
-            $processed = $this->processObjectPropertyValue($name, $value, $rules, $context);
+            $processed = $this->processObjectPropertyValue($name, $value, $rules, $redactionContext);
             $changed = $changed || $processed !== $value;
             $result[$name] = $processed;
             ++$count;
 
-            if ($this->hasExceededTotalNodeLimit($context) && $count < count($publicProperties)) {
+            if ($this->hasExceededTotalNodeLimit($redactionContext) && $count < count($publicProperties)) {
                 $this->appendObjectOverflowPlaceholder($result);
                 $truncated = true;
 
@@ -326,36 +352,39 @@ final class Redactor implements RedactorInterface
             return [$result, $changed, $truncated];
         }
 
-        $ref = new ReflectionClass($object);
-        foreach ($ref->getProperties() as $prop) {
-            if ($prop->isPublic()) {
+        $reflectionClass = new ReflectionClass($object);
+        foreach ($reflectionClass->getProperties() as $reflectionProperty) {
+            if ($reflectionProperty->isPublic()) {
                 continue;
             }
 
-            if ($prop->isStatic()) {
+            if ($reflectionProperty->isStatic()) {
                 continue;
             }
 
-            if (! $prop->isInitialized($object)) {
+            if (! $reflectionProperty->isInitialized($object)) {
                 continue;
             }
 
-            $name = $prop->getName();
-            $value = $prop->getValue($object);
+            $name = $reflectionProperty->getName();
+            $value = $reflectionProperty->getValue($object);
 
-            if ($context->totalNodeLimitExceeded || $this->hitContainerItemLimit($count, $name, $context)) {
+            if (
+                $redactionContext->totalNodeLimitExceeded
+                || $this->hitContainerItemLimit($count, $name, $redactionContext)
+            ) {
                 $this->appendObjectOverflowPlaceholder($result);
                 $truncated = true;
 
                 break;
             }
 
-            $processed = $this->processObjectPropertyValue($name, $value, $rules, $context);
+            $processed = $this->processObjectPropertyValue($name, $value, $rules, $redactionContext);
             $changed = $changed || $processed !== $value;
             $result[$name] = $processed;
             ++$count;
 
-            if ($this->hasExceededTotalNodeLimit($context)) {
+            if ($this->hasExceededTotalNodeLimit($redactionContext)) {
                 $this->appendObjectOverflowPlaceholder($result);
                 $truncated = true;
 
@@ -373,30 +402,34 @@ final class Redactor implements RedactorInterface
         string $key,
         mixed $value,
         array $rules,
-        RedactionContext $context,
+        RedactionContext $redactionContext,
     ): mixed {
-        if ($this->hitNodeLimit('object_property', $key, $context)) {
+        if ($this->hitNodeLimit('object_property', $key, $redactionContext)) {
             return $this->overflowValue();
         }
 
-        return $this->maskValueCopy($key, $value, $rules, $context);
+        return $this->maskValueCopy($key, $value, $rules, $redactionContext);
     }
 
     /**
      * @param array<string, RedactionRuleInterface> $rules
      */
-    private function processChildCopy(int|string $key, mixed $item, array $rules, RedactionContext $context): mixed
-    {
-        if ($this->hitNodeLimit('node', $key, $context)) {
+    private function processChildCopy(
+        int|string $key,
+        mixed $item,
+        array $rules,
+        RedactionContext $redactionContext
+    ): mixed {
+        if ($this->hitNodeLimit('node', $key, $redactionContext)) {
             return $this->overflowValue();
         }
 
         if (is_scalar($item) && isset($rules[$key])) {
-            return $this->applyRule($key, $item, $rules[$key], $context);
+            return $this->applyRule($key, $item, $rules[$key], $redactionContext);
         }
 
         if (is_array($item) || (is_object($item) && $this->shouldProcessObject($item))) {
-            return $this->processValueCopy($item, $rules, $context);
+            return $this->processValueCopy($item, $rules, $redactionContext);
         }
 
         return $item;
@@ -405,15 +438,15 @@ final class Redactor implements RedactorInterface
     /**
      * @param array<string, RedactionRuleInterface> $rules
      */
-    private function maskValueCopy(string $key, mixed $value, array $rules, RedactionContext $context): mixed
+    private function maskValueCopy(string $key, mixed $value, array $rules, RedactionContext $redactionContext): mixed
     {
         $rule = $rules[$key] ?? null;
         if (is_scalar($value) && $rule instanceof RedactionRuleInterface) {
-            return $this->applyRule($key, $value, $rule, $context);
+            return $this->applyRule($key, $value, $rule, $redactionContext);
         }
 
         if (is_array($value) || (is_object($value) && $this->shouldProcessObject($value))) {
-            return $this->processValueCopy($value, $rules, $context);
+            return $this->processValueCopy($value, $rules, $redactionContext);
         }
 
         return $value;
@@ -422,43 +455,50 @@ final class Redactor implements RedactorInterface
     private function applyRule(
         int|string $key,
         mixed $value,
-        RedactionRuleInterface $rule,
-        RedactionContext $context,
+        RedactionRuleInterface $redactionRule,
+        RedactionContext $redactionContext,
     ): ?string {
         try {
-            return $rule->apply((string) $value, $context->ruleContext);
+            return $redactionRule->apply((string) $value, $redactionContext->ruleContext);
         } catch (Throwable $exception) {
-            $this->onLimit('ruleException', ['key' => $key, 'exception' => $exception::class], $context);
+            $this->onLimit('ruleException', ['key' => $key, 'exception' => $exception::class], $redactionContext);
 
             return $this->overflowValue();
         }
     }
 
-    private function enterDepth(RedactionContext $context): bool
+    private function enterDepth(RedactionContext $redactionContext): bool
     {
-        if (null !== $this->options->maxDepth && $context->currentDepth >= $this->options->maxDepth) {
+        if (
+            null !== $this->redactorOptions->maxDepth
+            && $redactionContext->currentDepth >= $this->redactorOptions->maxDepth
+        ) {
             return false;
         }
 
-        ++$context->currentDepth;
+        ++$redactionContext->currentDepth;
 
         return true;
     }
 
-    private function leaveDepth(RedactionContext $context): void
+    private function leaveDepth(RedactionContext $redactionContext): void
     {
-        --$context->currentDepth;
+        --$redactionContext->currentDepth;
     }
 
-    private function shouldStopForDepth(RedactionContext $context): bool
+    private function shouldStopForDepth(RedactionContext $redactionContext): bool
     {
-        return null !== $this->options->maxDepth && $context->currentDepth >= $this->options->maxDepth;
+        return null !== $this->redactorOptions->maxDepth
+            && $redactionContext->currentDepth >= $this->redactorOptions->maxDepth;
     }
 
-    private function hitContainerItemLimit(int $count, int|string $key, RedactionContext $context): bool
+    private function hitContainerItemLimit(int $count, int|string $key, RedactionContext $redactionContext): bool
     {
-        if (null !== $this->options->maxItemsPerContainer && $count >= $this->options->maxItemsPerContainer) {
-            $this->onLimit('maxItemsPerContainer', ['key' => $key], $context);
+        if (
+            null !== $this->redactorOptions->maxItemsPerContainer
+            && $count >= $this->redactorOptions->maxItemsPerContainer
+        ) {
+            $this->onLimit('maxItemsPerContainer', ['key' => $key], $redactionContext);
 
             return true;
         }
@@ -466,15 +506,15 @@ final class Redactor implements RedactorInterface
         return false;
     }
 
-    private function hitNodeLimit(string $kind, int|string $key, RedactionContext $context): bool
+    private function hitNodeLimit(string $kind, int|string $key, RedactionContext $redactionContext): bool
     {
-        if ($this->hasExceededTotalNodeLimit($context)) {
+        if ($this->hasExceededTotalNodeLimit($redactionContext)) {
             return true;
         }
 
-        if (++$context->nodesVisited > ($this->options->maxTotalNodes ?? PHP_INT_MAX)) {
-            $context->totalNodeLimitExceeded = true;
-            $this->onLimit('maxTotalNodes', ['kind' => $kind, 'key' => $key], $context);
+        if (++$redactionContext->nodesVisited > ($this->redactorOptions->maxTotalNodes ?? PHP_INT_MAX)) {
+            $redactionContext->totalNodeLimitExceeded = true;
+            $this->onLimit('maxTotalNodes', ['kind' => $kind, 'key' => $key], $redactionContext);
 
             return true;
         }
@@ -485,16 +525,16 @@ final class Redactor implements RedactorInterface
     /**
      * @param array<string, mixed> $info
      */
-    private function onLimit(string $type, array $info, RedactionContext $context): void
+    private function onLimit(string $type, array $info, RedactionContext $redactionContext): void
     {
-        $callback = $this->options->onLimitExceededCallback();
+        $callback = $this->redactorOptions->onLimitExceededCallback();
         if (null !== $callback) {
             try {
                 $callback([
                     ...$info,
                     'type' => $type,
-                    'depth' => $context->currentDepth,
-                    'nodesVisited' => $context->nodesVisited,
+                    'depth' => $redactionContext->currentDepth,
+                    'nodesVisited' => $redactionContext->nodesVisited,
                 ]);
             } catch (Throwable) {
                 // Limit callbacks are best-effort diagnostics and must not make redaction fail open.
@@ -502,14 +542,14 @@ final class Redactor implements RedactorInterface
         }
     }
 
-    private function hasExceededTotalNodeLimit(RedactionContext $context): bool
+    private function hasExceededTotalNodeLimit(RedactionContext $redactionContext): bool
     {
-        return $context->totalNodeLimitExceeded;
+        return $redactionContext->totalNodeLimitExceeded;
     }
 
     private function overflowValue(): ?string
     {
-        return $this->options->overflowPlaceholder;
+        return $this->redactorOptions->overflowPlaceholder;
     }
 
     /**
@@ -520,17 +560,17 @@ final class Redactor implements RedactorInterface
      */
     private function appendOverflowPlaceholder(array $truncated, array $source): array
     {
-        if (null === $this->options->overflowPlaceholder) {
+        if (null === $this->redactorOptions->overflowPlaceholder) {
             return $truncated;
         }
 
         if (array_is_list($source)) {
-            $truncated[] = $this->options->overflowPlaceholder;
+            $truncated[] = $this->redactorOptions->overflowPlaceholder;
 
             return $truncated;
         }
 
-        $truncated[self::OVERFLOW_KEY] = $this->options->overflowPlaceholder;
+        $truncated[self::OVERFLOW_KEY] = $this->redactorOptions->overflowPlaceholder;
 
         return $truncated;
     }
@@ -540,8 +580,8 @@ final class Redactor implements RedactorInterface
      */
     private function appendObjectOverflowPlaceholder(array &$properties): void
     {
-        if (null !== $this->options->overflowPlaceholder) {
-            $properties[self::OVERFLOW_KEY] = $this->options->overflowPlaceholder;
+        if (null !== $this->redactorOptions->overflowPlaceholder) {
+            $properties[self::OVERFLOW_KEY] = $this->redactorOptions->overflowPlaceholder;
         }
     }
 

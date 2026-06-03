@@ -16,15 +16,15 @@ final class PhoneRule extends AbstractStartEndRule implements RedactionRuleInter
         parent::__construct(4, 2);
     }
 
-    public function apply(string $value, RedactionRuleContextInterface $context): string
+    public function apply(string $value, RedactionRuleContextInterface $redactionRuleContext): string
     {
         $masked = preg_replace('/(\d{4})\d*(\d{2})/', '$1****$2', $value);
 
         if (null === $masked || $masked === $value) {
-            return parent::apply($value, $context);
+            return parent::apply($value, $redactionRuleContext);
         }
 
-        $limit = $context->getLengthLimit();
+        $limit = $redactionRuleContext->getLengthLimit();
         if (null !== $limit) {
             return substr($masked, 0, $limit);
         }

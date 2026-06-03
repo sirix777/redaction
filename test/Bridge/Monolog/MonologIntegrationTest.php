@@ -114,9 +114,9 @@ final class MonologIntegrationTest extends TestCase
     private function createLogger(array $rules = [], bool $useDefaultRules = true): array
     {
         $redactor = new Redactor($rules, $useDefaultRules);
-        $processor = new RedactorProcessor($redactor);
+        $redactorProcessor = new RedactorProcessor($redactor);
         $logger = new Logger('test');
-        $logger->pushProcessor($processor);
+        $logger->pushProcessor($redactorProcessor);
         $testHandler = new TestHandler();
         $logger->pushHandler($testHandler);
 
