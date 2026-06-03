@@ -34,10 +34,13 @@ final class RedactorObjectReflectionTest extends TestCase
 
         $result = $redactor->redact(['user' => $user]);
 
+        /** @var stdClass $resultUser */
+        $resultUser = $result['user'];
+
         $this->assertInstanceOf(stdClass::class, $result['user']);
         $this->assertNotSame($user, $result['user'], 'Should be a cloned instance');
-        $this->assertSame('my****', $result['user']->password);
-        $this->assertSame('carol', $result['user']->username);
+        $this->assertSame('my****', $resultUser->password);
+        $this->assertSame('carol', $resultUser->username);
         $this->assertSame('mypass', $user->password);
         $this->assertSame('carol', $user->username);
     }
@@ -59,8 +62,11 @@ final class RedactorObjectReflectionTest extends TestCase
 
         $result = $redactor->redact(['user' => $user]);
 
-        $this->assertSame('sec***', $result['user']->password);
-        $this->assertSame('dave', $result['user']->username);
+        /** @var stdClass $resultUser */
+        $resultUser = $result['user'];
+
+        $this->assertSame('sec***', $resultUser->password);
+        $this->assertSame('dave', $resultUser->username);
         $this->assertSame('secr3t', $user->password);
     }
 
@@ -77,9 +83,12 @@ final class RedactorObjectReflectionTest extends TestCase
 
         $result = $redactor->redact(['obj' => $obj]);
 
+        /** @var stdClass $resultObj */
+        $resultObj = $result['obj'];
+
         $this->assertIsObject($result['obj']);
         $this->assertSame('topsecret', $obj->secret);
-        $this->assertSame('to*******', $result['obj']->secret);
+        $this->assertSame('to*******', $resultObj->secret);
     }
 
     public function testPrivatePropertiesAreProcessedViaReflection(): void
@@ -106,6 +115,8 @@ final class RedactorObjectReflectionTest extends TestCase
         ;
 
         $result = $redactor->redact(['user' => $user]);
+
+        /** @var stdClass $processed */
         $processed = $result['user'];
 
         $this->assertSame('priv****', $processed->password);
@@ -126,9 +137,12 @@ final class RedactorObjectReflectionTest extends TestCase
 
         $result = $redactor->redact($user);
 
+        /** @var stdClass $resultObj */
+        $resultObj = $result;
+
         $this->assertInstanceOf(stdClass::class, $result);
         $this->assertNotSame($user, $result);
-        $this->assertSame('public', $result->name);
+        $this->assertSame('public', $resultObj->name);
     }
 
     public function testPublicArrayModeProcessesOnlyPublicProperties(): void

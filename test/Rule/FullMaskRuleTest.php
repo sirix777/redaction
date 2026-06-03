@@ -42,6 +42,11 @@ final class FullMaskRuleTest extends TestCase
         $this->assertSame($expected, $processed['secret']);
     }
 
+    /**
+     * @param array<int|string, mixed> $data
+     *
+     * @return array<int|string, mixed>
+     */
     private function convertNested(array $data): array
     {
         foreach ($data as &$value) {
@@ -61,6 +66,9 @@ final class FullMaskRuleTest extends TestCase
         return $data;
     }
 
+    /**
+     * @param array<int|string, mixed> $arr
+     */
     private function isAssoc(array $arr): bool
     {
         if ([] === $arr) {

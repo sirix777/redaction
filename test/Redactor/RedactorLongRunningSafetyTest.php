@@ -15,6 +15,8 @@ use Sirix\Redaction\Rule\OffsetRule;
 use Sirix\Redaction\Rule\RedactionRuleInterface;
 use stdClass;
 
+use function method_exists;
+
 final class RedactorLongRunningSafetyTest extends TestCase
 {
     public function testRuleExceptionFailsClosedAndStateIsCleaned(): void
@@ -86,7 +88,7 @@ final class RedactorLongRunningSafetyTest extends TestCase
             public function apply(string $value, RedactionRuleContextInterface $context): string
             {
                 $this->contextClass = $context::class;
-                $this->contextIsRedactor = $context instanceof Redactor;
+                $this->contextIsRedactor = method_exists($context, 'redact');
 
                 return $context->getReplacement() . $context->getTemplate() . $context->getLengthLimit();
             }

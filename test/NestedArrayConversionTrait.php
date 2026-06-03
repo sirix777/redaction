@@ -10,6 +10,11 @@ use function is_array;
 
 trait NestedArrayConversionTrait
 {
+    /**
+     * @param array<string, mixed> $data
+     *
+     * @return array<string, mixed>
+     */
     private function convertNested(array $data): array
     {
         foreach ($data as $key => $value) {
@@ -21,6 +26,9 @@ trait NestedArrayConversionTrait
         return $data;
     }
 
+    /**
+     * @param array<string, mixed> $data
+     */
     private function arrayToObjectRecursive(array $data): object
     {
         $obj = new stdClass();

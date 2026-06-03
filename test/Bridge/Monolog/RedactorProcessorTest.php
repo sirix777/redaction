@@ -172,6 +172,9 @@ final class RedactorProcessorTest extends TestCase
         $this->assertSame('abcd', $processed->context['token']);
     }
 
+    /**
+     * @param array<string, mixed> $context
+     */
     private function createRecord(array $context): LogRecord
     {
         return new LogRecord(

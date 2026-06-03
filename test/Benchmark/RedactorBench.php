@@ -30,9 +30,13 @@ use function str_repeat;
 final class RedactorBench
 {
     private Redactor $defaultRedactor;
+
+    /** @var list<array<string, mixed>> */
     private array $largeArray = [];
 
     private Redactor $deepRedactor;
+
+    /** @var array<string, mixed> */
     private array $deepData = [];
 
     private Redactor $objectCopyRedactor;
@@ -49,9 +53,13 @@ final class RedactorBench
     private Redactor $noRedactionRedactor;
 
     private Redactor $smallPayloadRedactor;
+
+    /** @var array<string, mixed> */
     private array $smallPayload = [];
 
     private Redactor $longStringRedactor;
+
+    /** @var array<string, string> */
     private array $longStringPayload = [];
 
     #[Bench\BeforeMethods(['setUpLargeArray'])]

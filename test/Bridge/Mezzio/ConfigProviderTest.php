@@ -14,6 +14,14 @@ final class ConfigProviderTest extends TestCase
 {
     public function testProvidesExpectedDependencies(): void
     {
+        /**
+         * @var array{
+         *     dependencies: array{
+         *         aliases: array<class-string, class-string>,
+         *         factories: array<class-string, class-string>
+         *     }
+         * }
+         */
         $config = (new ConfigProvider())();
 
         $this->assertSame(

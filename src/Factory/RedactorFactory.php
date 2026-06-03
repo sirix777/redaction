@@ -125,7 +125,12 @@ final class RedactorFactory
     {
         $template = $config->string($path, '%s');
         if (1 !== substr_count($template, '%s') || preg_match('/%(?!s)/', $template)) {
-            throw InvalidConfigValueException::forType($path, 'safe mask template with exactly one plain %s', $template, self::class);
+            throw InvalidConfigValueException::forType(
+                $path,
+                'safe mask template with exactly one plain %s',
+                $template,
+                self::class
+            );
         }
 
         return $template;

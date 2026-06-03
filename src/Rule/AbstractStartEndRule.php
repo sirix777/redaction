@@ -33,9 +33,18 @@ class AbstractStartEndRule
             return $value;
         }
 
+        $limit = $context->getLengthLimit();
+
         if ($length <= $this->visibleStart + $this->visibleEnd) {
-            return substr($value, 0, 1)
-                . $this->repeatMask($context->getReplacement(), $length - 1, $context->getLengthLimit());
+            $prefix = substr($value, 0, 1);
+            $maxMaskBytes = null === $limit ? null : max(0, $limit - strlen($prefix));
+            $result = $prefix . $this->repeatMask($context->getReplacement(), $length - 1, $maxMaskBytes);
+
+            if (null !== $limit) {
+                return substr($result, 0, $limit);
+            }
+
+            return $result;
         }
 
         $visibleStart = min($this->visibleStart, $length);
@@ -43,7 +52,6 @@ class AbstractStartEndRule
         $hiddenLength = max(0, $length - $visibleStart - $visibleEnd);
         $prefix = substr($value, 0, $visibleStart);
         $isDefaultTemplate = self::DEFAULT_TEMPLATE === $context->getTemplate();
-        $limit = $context->getLengthLimit();
         $maxMaskBytes = null === $limit ? null : max(0, $limit - strlen($prefix));
 
         $hidden = $this->repeatMask($context->getReplacement(), $hiddenLength, $maxMaskBytes);

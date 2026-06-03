@@ -31,6 +31,33 @@ final class RuleLengthLimitTest extends TestCase
         $this->assertSame('my***', $result['secret']);
     }
 
+    public function testStartEndRuleShortValueDoesNotExceedLengthLimit(): void
+    {
+        $redactor = (new Redactor([
+            'secret' => new StartEndRule(2, 2),
+        ], false))
+            ->withLengthLimit(2)
+        ;
+
+        $result = $redactor->redact(['secret' => 'abc']);
+
+        $this->assertSame('a*', $result['secret']);
+        $this->assertSame(2, strlen($result['secret']));
+    }
+
+    public function testStartEndRuleShortValueRespectsZeroLengthLimit(): void
+    {
+        $redactor = (new Redactor([
+            'secret' => new StartEndRule(2, 2),
+        ], false))
+            ->withLengthLimit(0)
+        ;
+
+        $result = $redactor->redact(['secret' => 'abc']);
+
+        $this->assertSame('', $result['secret']);
+    }
+
     public function testOffsetRuleRespectsLengthLimit(): void
     {
         $redactor = (new Redactor([
