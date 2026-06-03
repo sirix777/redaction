@@ -15,8 +15,8 @@ final class FixedValueRuleTest extends TestCase
 
     public function testFixedValueRule(): void
     {
-        $rule = new FixedValueRule('REDACTED');
-        $redactor = new Redactor(['token' => $rule], false);
+        $fixedValueRule = new FixedValueRule('REDACTED');
+        $redactor = new Redactor(['token' => $fixedValueRule], false);
         $processed = $redactor->redact($this->convertNested(['token' => 'abcd1234']));
 
         $this->assertSame('REDACTED', $processed['token']);
@@ -24,8 +24,8 @@ final class FixedValueRuleTest extends TestCase
 
     public function testCustomReplacementValue(): void
     {
-        $rule = new FixedValueRule('CUSTOM_VALUE');
-        $redactor = new Redactor(['secret' => $rule], false);
+        $fixedValueRule = new FixedValueRule('CUSTOM_VALUE');
+        $redactor = new Redactor(['secret' => $fixedValueRule], false);
         $processed = $redactor->redact($this->convertNested(['secret' => 'sensitive-data']));
 
         $this->assertSame('CUSTOM_VALUE', $processed['secret']);

@@ -16,8 +16,8 @@ final class EmailRuleTest extends TestCase
 
     public function testEmailRedaction(): void
     {
-        $rule = new EmailRule();
-        $redactor = new Redactor(['email' => $rule], false);
+        $emailRule = new EmailRule();
+        $redactor = new Redactor(['email' => $emailRule], false);
         $processed = $redactor->redact($this->convertNested(['email' => 'john.doe@example.com']));
 
         $this->assertSame('joh****@example.com', $processed['email']);
@@ -25,8 +25,8 @@ final class EmailRuleTest extends TestCase
 
     public function testShortEmailRedaction(): void
     {
-        $rule = new EmailRule();
-        $redactor = new Redactor(['email' => $rule], false);
+        $emailRule = new EmailRule();
+        $redactor = new Redactor(['email' => $emailRule], false);
         $processed = $redactor->redact($this->convertNested(['email' => 'joe@example.com']));
 
         $this->assertSame('joe****@example.com', $processed['email']);
@@ -34,14 +34,14 @@ final class EmailRuleTest extends TestCase
 
     public function testEmailRedactionInNestedStructures(): void
     {
-        $rule = new EmailRule();
+        $emailRule = new EmailRule();
         $redactor = (new Redactor(
             [
-                'email' => $rule,
+                'email' => $emailRule,
             ],
             false
         ))
-            ->setObjectViewMode(ObjectViewModeEnum::Copy)
+            ->withObjectViewMode(ObjectViewModeEnum::Copy)
         ;
 
         $processed = $redactor->redact($this->convertNested([
@@ -57,8 +57,8 @@ final class EmailRuleTest extends TestCase
 
     public function testNonEmailValue(): void
     {
-        $rule = new EmailRule();
-        $redactor = new Redactor(['value' => $rule], false);
+        $emailRule = new EmailRule();
+        $redactor = new Redactor(['value' => $emailRule], false);
         $processed = $redactor->redact($this->convertNested(['value' => 'This is not an email']));
 
         $this->assertSame('Thi*************mail', $processed['value']);

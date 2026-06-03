@@ -10,6 +10,11 @@ use Sirix\Redaction\Redactor;
 use Sirix\Redaction\Rule\OffsetRule;
 use stdClass;
 
+enum RedactorObjectReflectionTestEnum
+{
+    case Active;
+}
+
 final class RedactorObjectReflectionTest extends TestCase
 {
     public function testClonedObjectIsProcessedAndOriginalUnchangedWithTopLevelRules(): void
@@ -24,15 +29,18 @@ final class RedactorObjectReflectionTest extends TestCase
             ],
             false
         ))
-            ->setObjectViewMode(ObjectViewModeEnum::Copy)
+            ->withObjectViewMode(ObjectViewModeEnum::Copy)
         ;
 
         $result = $redactor->redact(['user' => $user]);
 
+        /** @var stdClass $resultUser */
+        $resultUser = $result['user'];
+
         $this->assertInstanceOf(stdClass::class, $result['user']);
         $this->assertNotSame($user, $result['user'], 'Should be a cloned instance');
-        $this->assertSame('my****', $result['user']->password);
-        $this->assertSame('carol', $result['user']->username);
+        $this->assertSame('my****', $resultUser->password);
+        $this->assertSame('carol', $resultUser->username);
         $this->assertSame('mypass', $user->password);
         $this->assertSame('carol', $user->username);
     }
@@ -49,13 +57,16 @@ final class RedactorObjectReflectionTest extends TestCase
             ],
             false
         ))
-            ->setObjectViewMode(ObjectViewModeEnum::Copy)
+            ->withObjectViewMode(ObjectViewModeEnum::Copy)
         ;
 
         $result = $redactor->redact(['user' => $user]);
 
-        $this->assertSame('sec***', $result['user']->password);
-        $this->assertSame('dave', $result['user']->username);
+        /** @var stdClass $resultUser */
+        $resultUser = $result['user'];
+
+        $this->assertSame('sec***', $resultUser->password);
+        $this->assertSame('dave', $resultUser->username);
         $this->assertSame('secr3t', $user->password);
     }
 
@@ -64,16 +75,20 @@ final class RedactorObjectReflectionTest extends TestCase
         $obj = new stdClass();
         $obj->secret = 'topsecret';
 
-        $redactor = new Redactor([
+        $redactor = (new Redactor([
             'secret' => new OffsetRule(2),
-        ], false);
-        $redactor->setObjectViewMode(ObjectViewModeEnum::Copy);
+        ], false))
+            ->withObjectViewMode(ObjectViewModeEnum::Copy)
+        ;
 
         $result = $redactor->redact(['obj' => $obj]);
 
+        /** @var stdClass $resultObj */
+        $resultObj = $result['obj'];
+
         $this->assertIsObject($result['obj']);
         $this->assertSame('topsecret', $obj->secret);
-        $this->assertSame('to*******', $result['obj']->secret);
+        $this->assertSame('to*******', $resultObj->secret);
     }
 
     public function testPrivatePropertiesAreProcessedViaReflection(): void
@@ -92,14 +107,16 @@ final class RedactorObjectReflectionTest extends TestCase
             }
         };
 
-        $redactor = new Redactor([
+        $redactor = (new Redactor([
             'password' => new OffsetRule(4),
             'token' => new OffsetRule(3),
-        ], false);
-
-        $redactor->setObjectViewMode(ObjectViewModeEnum::Copy);
+        ], false))
+            ->withObjectViewMode(ObjectViewModeEnum::Copy)
+        ;
 
         $result = $redactor->redact(['user' => $user]);
+
+        /** @var stdClass $processed */
         $processed = $result['user'];
 
         $this->assertSame('priv****', $processed->password);
@@ -107,5 +124,74 @@ final class RedactorObjectReflectionTest extends TestCase
         $this->assertSame('privpass', $user->getPassword());
         $this->assertSame('tok123', $user->getToken());
         $this->assertNotSame($user, $processed);
+    }
+
+    public function testCopyModeAlwaysReturnsPlainObjectCopy(): void
+    {
+        $user = new stdClass();
+        $user->name = 'public';
+
+        $redactor = (new Redactor([], false))
+            ->withObjectViewMode(ObjectViewModeEnum::Copy)
+        ;
+
+        $result = $redactor->redact($user);
+
+        /** @var stdClass $resultObj */
+        $resultObj = $result;
+
+        $this->assertInstanceOf(stdClass::class, $result);
+        $this->assertNotSame($user, $result);
+        $this->assertSame('public', $resultObj->name);
+    }
+
+    public function testPublicArrayModeProcessesOnlyPublicProperties(): void
+    {
+        $user = new class('privpass') {
+            public string $password = 'publicpass';
+
+            public function __construct(private readonly string $token) {}
+
+            public function getToken(): string
+            {
+                return $this->token;
+            }
+        };
+
+        $redactor = (new Redactor([
+            'password' => new OffsetRule(3),
+            'token' => new OffsetRule(3),
+        ], false))
+            ->withObjectViewMode(ObjectViewModeEnum::PublicArray)
+        ;
+
+        $result = $redactor->redact($user);
+
+        $this->assertSame(['password' => 'pub*******'], $result);
+        $this->assertSame('privpass', $user->getToken());
+    }
+
+    public function testSkipModeDoesNotTraverseObjectProperties(): void
+    {
+        $user = new stdClass();
+        $user->password = 'secret';
+
+        $redactor = new Redactor([
+            'password' => new OffsetRule(2),
+        ], false);
+
+        $this->assertSame('[object stdClass]', $redactor->redact($user));
+    }
+
+    public function testUnitEnumIsReturnedUnchanged(): void
+    {
+        $redactor = (new Redactor([], false))
+            ->withObjectViewMode(ObjectViewModeEnum::Copy)
+        ;
+
+        $this->assertSame(
+            RedactorObjectReflectionTestEnum::Active,
+            $redactor->redact(RedactorObjectReflectionTestEnum::Active),
+        );
     }
 }

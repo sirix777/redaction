@@ -5,72 +5,14 @@ declare(strict_types=1);
 namespace Test\Sirix\Redaction\Rule\Default;
 
 use PHPUnit\Framework\TestCase;
+use Sirix\Redaction\Redactor;
 use Sirix\Redaction\Rule\Default\DefaultRules;
-use Sirix\Redaction\Rule\Factory\SharedRuleFactory;
 use Sirix\Redaction\Rule\RedactionRuleInterface;
 
-use function array_key_first;
 use function sprintf;
 
 final class DefaultRulesTest extends TestCase
 {
-    public function setUp(): void
-    {
-        SharedRuleFactory::clearCache();
-    }
-
-    public function testRulesAreCached(): void
-    {
-        $first = DefaultRules::getAll();
-        $second = DefaultRules::getAll();
-
-        foreach ($first as $key => $rule) {
-            $this->assertArrayHasKey($key, $second);
-            $this->assertSame(
-                $rule,
-                $second[$key],
-                sprintf('Rule instance for key "%s" should be cached and identical', (string) $key)
-            );
-        }
-    }
-
-    public function testClearCacheWorks(): void
-    {
-        $before = DefaultRules::getAll();
-        $key = array_key_first($before);
-        $this->assertNotNull($key);
-
-        $firstInstance = $before[$key];
-        DefaultRules::clearCache();
-
-        $after = DefaultRules::getAll();
-        $this->assertArrayHasKey($key, $after);
-        $this->assertNotSame(
-            $firstInstance,
-            $after[$key],
-            'After clearCache new rule instances should be created'
-        );
-    }
-
-    public function testSameInstancesReturned(): void
-    {
-        $a = DefaultRules::getAll();
-        $b = DefaultRules::getAll();
-
-        $keys = ['email', 'phone', 'card_number', 'cvv'];
-        foreach ($keys as $key) {
-            if (! isset($a[$key])) {
-                // If some key does not exist in defaults, skip assertion for it
-                continue;
-            }
-            $this->assertSame(
-                $a[$key],
-                $b[$key],
-                sprintf('Instances for key "%s" should be the same between calls', $key)
-            );
-        }
-    }
-
     public function testAllRulesAreRedactionRuleInterface(): void
     {
         $rules = DefaultRules::getAll();
@@ -83,5 +25,58 @@ final class DefaultRulesTest extends TestCase
                 sprintf('Rule for key "%s" must implement RedactionRuleInterface', (string) $key)
             );
         }
+    }
+
+    public function testCriticalDefaultKeysArePresent(): void
+    {
+        $rules = DefaultRules::getAll();
+
+        foreach (['password', 'card_number', 'cvv', 'expirydate', 'email', 'phone', 'name'] as $key) {
+            $this->assertArrayHasKey($key, $rules);
+        }
+    }
+
+    public function testDefaultRulesReturnFreshRuleInstances(): void
+    {
+        $first = DefaultRules::getAll();
+        $second = DefaultRules::getAll();
+
+        $this->assertEquals($first, $second);
+        $this->assertNotSame($first['email'], $second['email']);
+    }
+
+    public function testDefaultRulesMaskCriticalKeys(): void
+    {
+        $redactor = new Redactor();
+
+        $result = $redactor->redact([
+            'password' => 'secret',
+            'card_number' => '4111111111111111',
+            'cvv' => '123',
+            'expirydate' => '12/2030',
+            'email' => 'john.doe@example.com',
+            'phone' => '1234567890',
+            'name' => 'John',
+        ]);
+
+        $this->assertSame('*', $result['password']);
+        $this->assertSame('411111******1111', $result['card_number']);
+        $this->assertSame('***', $result['cvv']);
+        $this->assertSame('**/****', $result['expirydate']);
+        $this->assertSame('joh****@example.com', $result['email']);
+        $this->assertSame('1234****90', $result['phone']);
+        $this->assertSame('Jo***n', $result['name']);
+    }
+
+    public function testUseDefaultRulesFalseDisablesDefaultRules(): void
+    {
+        $redactor = new Redactor(useDefaultRules: false);
+
+        $payload = [
+            'password' => 'secret',
+            'email' => 'john.doe@example.com',
+        ];
+
+        $this->assertSame($payload, $redactor->redact($payload));
     }
 }

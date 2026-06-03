@@ -24,7 +24,7 @@ final class StartEndRuleTest extends TestCase
             ],
             false
         ))
-            ->setObjectViewMode(ObjectViewModeEnum::Copy)
+            ->withObjectViewMode(ObjectViewModeEnum::Copy)
         ;
 
         $value = $this->convertNested([
@@ -44,9 +44,10 @@ final class StartEndRuleTest extends TestCase
 
     public function testCustomTemplate(): void
     {
-        $rule = new StartEndRule(2, 3);
-        $redactor = new Redactor(['secret' => $rule], false);
-        $redactor->setTemplate('%s(redacted)');
+        $startEndRule = new StartEndRule(2, 3);
+        $redactor = (new Redactor(['secret' => $startEndRule], false))
+            ->withTemplate('%s(redacted)')
+        ;
 
         $processed = $redactor->redact($this->convertNested(['secret' => 'my_secret_value']));
 
@@ -55,8 +56,8 @@ final class StartEndRuleTest extends TestCase
 
     public function testZeroVisibleStart(): void
     {
-        $rule = new StartEndRule(0, 2);
-        $redactor = new Redactor(['secret' => $rule], false);
+        $startEndRule = new StartEndRule(0, 2);
+        $redactor = new Redactor(['secret' => $startEndRule], false);
         $processed = $redactor->redact($this->convertNested(['secret' => 'my_secret_value']));
 
         $this->assertSame('*************ue', $processed['secret']);
@@ -64,8 +65,8 @@ final class StartEndRuleTest extends TestCase
 
     public function testZeroVisibleEnd(): void
     {
-        $rule = new StartEndRule(2, 0);
-        $redactor = new Redactor(['secret' => $rule], false);
+        $startEndRule = new StartEndRule(2, 0);
+        $redactor = new Redactor(['secret' => $startEndRule], false);
         $processed = $redactor->redact($this->convertNested(['secret' => 'my_secret_value']));
 
         $this->assertSame('my*************', $processed['secret']);
@@ -73,8 +74,8 @@ final class StartEndRuleTest extends TestCase
 
     public function testShortValues(): void
     {
-        $rule = new StartEndRule(2, 2);
-        $redactor = new Redactor(['short' => $rule], false);
+        $startEndRule = new StartEndRule(2, 2);
+        $redactor = new Redactor(['short' => $startEndRule], false);
 
         $cases = [
             ['value' => 'to', 'expected' => 't*'],

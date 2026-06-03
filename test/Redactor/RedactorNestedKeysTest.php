@@ -9,6 +9,7 @@ use Sirix\Redaction\Enum\ObjectViewModeEnum;
 use Sirix\Redaction\Redactor;
 use Sirix\Redaction\Rule\EmailRule;
 use Sirix\Redaction\Rule\OffsetRule;
+use stdClass;
 use Test\Sirix\Redaction\NestedArrayConversionTrait;
 
 final class RedactorNestedKeysTest extends TestCase
@@ -25,7 +26,7 @@ final class RedactorNestedKeysTest extends TestCase
             ],
             false
         ))
-            ->setObjectViewMode(ObjectViewModeEnum::Copy)
+            ->withObjectViewMode(ObjectViewModeEnum::Copy)
         ;
 
         $data = [
@@ -39,10 +40,12 @@ final class RedactorNestedKeysTest extends TestCase
 
         $processed = $redactor->redact($this->convertNested($data));
 
-        $this->assertIsObject($processed['user']);
-        $this->assertSame('joh****@example.com', $processed['user']->user);
-        $this->assertSame('J*******', $processed['user']->name);
-        $this->assertSame('+4412**********', $processed['user']->phone);
+        /** @var stdClass $user */
+        $user = $processed['user'];
+
+        $this->assertSame('joh****@example.com', $user->user);
+        $this->assertSame('J*******', $user->name);
+        $this->assertSame('+4412**********', $user->phone);
         $this->assertSame('1234567890123456', $processed['card_number']);
     }
 
@@ -55,7 +58,7 @@ final class RedactorNestedKeysTest extends TestCase
             ],
             false
         ))
-            ->setObjectViewMode(ObjectViewModeEnum::Copy)
+            ->withObjectViewMode(ObjectViewModeEnum::Copy)
         ;
 
         $data = [
@@ -70,11 +73,14 @@ final class RedactorNestedKeysTest extends TestCase
 
         $processed = $redactor->redact($this->convertNested($data));
 
-        $this->assertIsObject($processed['data']);
-        $this->assertIsObject($processed['data']->info);
-        $this->assertSame('se*******', $processed['data']->info->data);
-        $this->assertSame('con************', $processed['data']->info->info);
-        $this->assertSame('an************', $processed['data']->data);
+        /** @var stdClass $dataData */
+        $dataData = $processed['data'];
+
+        /** @var stdClass $infoData */
+        $infoData = $dataData->info;
+        $this->assertSame('se*******', $infoData->data);
+        $this->assertSame('con************', $infoData->info);
+        $this->assertSame('an************', $dataData->data);
     }
 
     public function testArraysAndObjectsMixedWithSameKeys(): void
@@ -85,7 +91,7 @@ final class RedactorNestedKeysTest extends TestCase
             ],
             false
         ))
-            ->setObjectViewMode(ObjectViewModeEnum::Copy)
+            ->withObjectViewMode(ObjectViewModeEnum::Copy)
         ;
 
         $data = [
@@ -101,9 +107,16 @@ final class RedactorNestedKeysTest extends TestCase
 
         $processed = $redactor->redact($this->convertNested($data));
 
-        $this->assertIsObject($processed['token']);
-        $this->assertSame('bear************', $processed['token']->auth->token);
-        $this->assertSame('refr*************', $processed['token']->refresh->token);
+        /** @var stdClass $token */
+        $token = $processed['token'];
+
+        /** @var stdClass $auth */
+        $auth = $token->auth;
+
+        /** @var stdClass $refresh */
+        $refresh = $token->refresh;
+        $this->assertSame('bear************', $auth->token);
+        $this->assertSame('refr*************', $refresh->token);
     }
 
     public function testRuleNotAppliedToNonScalarValues(): void

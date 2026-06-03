@@ -16,8 +16,8 @@ final class PhoneRuleTest extends TestCase
 
     public function testPhoneNumberRedaction(): void
     {
-        $rule = new PhoneRule();
-        $redactor = new Redactor(['phone' => $rule], false);
+        $phoneRule = new PhoneRule();
+        $redactor = new Redactor(['phone' => $phoneRule], false);
         $processed = $redactor->redact($this->convertNested(['phone' => '1234567890']));
 
         $this->assertSame('1234****90', $processed['phone']);
@@ -25,8 +25,8 @@ final class PhoneRuleTest extends TestCase
 
     public function testInternationalPhoneNumberRedaction(): void
     {
-        $rule = new PhoneRule();
-        $redactor = new Redactor(['phone' => $rule], false);
+        $phoneRule = new PhoneRule();
+        $redactor = new Redactor(['phone' => $phoneRule], false);
         $processed = $redactor->redact($this->convertNested(['phone' => '+44123456789012']));
 
         $this->assertSame('+4412****12', $processed['phone']);
@@ -34,8 +34,8 @@ final class PhoneRuleTest extends TestCase
 
     public function testFormattedPhoneNumberRedaction(): void
     {
-        $rule = new PhoneRule();
-        $redactor = new Redactor(['phone' => $rule], false);
+        $phoneRule = new PhoneRule();
+        $redactor = new Redactor(['phone' => $phoneRule], false);
         $processed = $redactor->redact($this->convertNested(['phone' => '123-456-7890']));
 
         $this->assertSame('123-******90', $processed['phone']);
@@ -43,14 +43,14 @@ final class PhoneRuleTest extends TestCase
 
     public function testPhoneRedactionInNestedStructures(): void
     {
-        $rule = new PhoneRule();
+        $phoneRule = new PhoneRule();
         $redactor = (new Redactor(
             [
-                'phone' => $rule,
+                'phone' => $phoneRule,
             ],
             false
         ))
-            ->setObjectViewMode(ObjectViewModeEnum::Copy)
+            ->withObjectViewMode(ObjectViewModeEnum::Copy)
         ;
 
         $processed = $redactor->redact($this->convertNested([
@@ -66,8 +66,8 @@ final class PhoneRuleTest extends TestCase
 
     public function testNonPhoneValue(): void
     {
-        $rule = new PhoneRule();
-        $redactor = new Redactor(['value' => $rule], false);
+        $phoneRule = new PhoneRule();
+        $redactor = new Redactor(['value' => $phoneRule], false);
         $processed = $redactor->redact($this->convertNested(['value' => 'This is not a phone number']));
 
         $this->assertSame('This********************er', $processed['value']);
@@ -75,8 +75,8 @@ final class PhoneRuleTest extends TestCase
 
     public function testShortPhoneNumber(): void
     {
-        $rule = new PhoneRule();
-        $redactor = new Redactor(['phone' => $rule], false);
+        $phoneRule = new PhoneRule();
+        $redactor = new Redactor(['phone' => $phoneRule], false);
         $processed = $redactor->redact($this->convertNested(['phone' => '12345']));
 
         $this->assertSame('1****', $processed['phone']);

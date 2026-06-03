@@ -7,7 +7,11 @@ namespace Test\Sirix\Redaction\Benchmark;
 use PhpBench\Attributes as Bench;
 use Sirix\Redaction\Enum\ObjectViewModeEnum;
 use Sirix\Redaction\Redactor;
+use Sirix\Redaction\Rule\FullMaskRule;
 use Sirix\Redaction\Rule\OffsetRule;
+use Sirix\Redaction\Rule\StartEndRule;
+
+use function str_repeat;
 
 /**
  * Micro-benchmarks for Sirix\Redaction\Redactor using phpbench/phpbench.
@@ -26,16 +30,37 @@ use Sirix\Redaction\Rule\OffsetRule;
 final class RedactorBench
 {
     private Redactor $defaultRedactor;
+
+    /** @var list<array<string, mixed>> */
     private array $largeArray = [];
 
     private Redactor $deepRedactor;
+
+    /** @var array<string, mixed> */
     private array $deepData = [];
 
     private Redactor $objectCopyRedactor;
-    private Redactor $objectRefRedactor;
+    private Redactor $objectPublicArrayRedactor;
 
     /** @var list<object> */
     private array $objectData = [];
+
+    private Redactor $largeArrayItemsLimitRedactor;
+    private Redactor $largeArrayNodeLimitRedactor;
+
+    /** @var list<array<string, mixed>> */
+    private array $noRedactionPayload = [];
+    private Redactor $noRedactionRedactor;
+
+    private Redactor $smallPayloadRedactor;
+
+    /** @var array<string, mixed> */
+    private array $smallPayload = [];
+
+    private Redactor $longStringRedactor;
+
+    /** @var array<string, string> */
+    private array $longStringPayload = [];
 
     #[Bench\BeforeMethods(['setUpLargeArray'])]
     public function benchLargeArrayDefaultRules(): void
@@ -64,9 +89,41 @@ final class RedactorBench
     }
 
     #[Bench\BeforeMethods(['setUpLargeObjectGraph'])]
-    public function benchLargeObjectGraphReferenceMode(): void
+    public function benchLargeObjectGraphPublicArrayMode(): void
     {
-        $this->objectRefRedactor->redact($this->objectData);
+        $this->objectPublicArrayRedactor->redact($this->objectData);
+    }
+
+    #[Bench\BeforeMethods(['setUpLargeArray'])]
+    public function benchLargeArrayWithMaxItemsLimit(): void
+    {
+        $this->largeArrayItemsLimitRedactor->redact($this->largeArray);
+    }
+
+    #[Bench\BeforeMethods(['setUpLargeArray'])]
+    public function benchLargeArrayWithMaxTotalNodes(): void
+    {
+        $this->largeArrayNodeLimitRedactor->redact($this->largeArray);
+    }
+
+    #[Bench\BeforeMethods(['setUpNoRedactionPayload'])]
+    public function benchNoRedactionCopyOnWrite(): void
+    {
+        $this->noRedactionRedactor->redact($this->noRedactionPayload);
+    }
+
+    #[Bench\BeforeMethods(['setUpSmallPayload'])]
+    public function benchRepeatedSmallPayloadRedaction(): void
+    {
+        for ($i = 0; $i < 1000; ++$i) {
+            $this->smallPayloadRedactor->redact($this->smallPayload);
+        }
+    }
+
+    #[Bench\BeforeMethods(['setUpLongStringPayload'])]
+    public function benchVeryLongStringWithLengthLimit(): void
+    {
+        $this->longStringRedactor->redact($this->longStringPayload);
     }
 
     public function setUpLargeArray(): void
@@ -85,6 +142,26 @@ final class RedactorBench
 
         $this->largeArray = $records;
         $this->defaultRedactor = new Redactor();
+        $this->largeArrayItemsLimitRedactor = (new Redactor())->withMaxItemsPerContainer(10);
+        $this->largeArrayNodeLimitRedactor = (new Redactor())->withMaxTotalNodes(50);
+    }
+
+    public function setUpNoRedactionPayload(): void
+    {
+        $records = [];
+        for ($i = 0; $i < 2000; ++$i) {
+            $records[] = [
+                'id' => $i,
+                'status' => 'ok',
+                'metadata' => [
+                    'source' => 'benchmark',
+                    'sequence' => $i,
+                ],
+            ];
+        }
+
+        $this->noRedactionPayload = $records;
+        $this->noRedactionRedactor = new Redactor([], false);
     }
 
     public function setUpDeepNesting(): void
@@ -101,8 +178,39 @@ final class RedactorBench
 
         $this->deepData = $data;
         $this->deepRedactor = (new Redactor())
-            ->setMaxDepth(20)
-            ->setOverflowPlaceholder('...')
+            ->withMaxDepth(20)
+            ->withOverflowPlaceholder('...')
+        ;
+    }
+
+    public function setUpSmallPayload(): void
+    {
+        $this->smallPayload = [
+            'email' => 'john.doe@example.com',
+            'password' => 'secret-password',
+            'nested' => [
+                'token' => 'abcdef123456',
+            ],
+        ];
+
+        $this->smallPayloadRedactor = new Redactor([
+            'password' => new OffsetRule(2),
+            'token' => new OffsetRule(4),
+        ]);
+    }
+
+    public function setUpLongStringPayload(): void
+    {
+        $this->longStringPayload = [
+            'blob' => str_repeat('a', 100_000),
+            'full' => str_repeat('b', 100_000),
+        ];
+
+        $this->longStringRedactor = (new Redactor([
+            'blob' => new StartEndRule(2, 2),
+            'full' => new FullMaskRule(),
+        ], false))
+            ->withLengthLimit(64)
         ;
     }
 
@@ -125,11 +233,11 @@ final class RedactorBench
         ];
 
         $this->objectCopyRedactor = (new Redactor($rules, false))
-            ->setObjectViewMode(ObjectViewModeEnum::Copy)
+            ->withObjectViewMode(ObjectViewModeEnum::Copy)
         ;
 
-        $this->objectRefRedactor = (new Redactor($rules, false))
-            ->setObjectViewMode(ObjectViewModeEnum::PublicArray)
+        $this->objectPublicArrayRedactor = (new Redactor($rules, false))
+            ->withObjectViewMode(ObjectViewModeEnum::PublicArray)
         ;
     }
 }

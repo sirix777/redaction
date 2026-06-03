@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Sirix\Redaction\Rule;
 
-use Sirix\Redaction\RedactorInterface;
+use Sirix\Redaction\RedactionRuleContextInterface;
 
 use function preg_replace;
+use function substr;
 
 final class NameRule extends AbstractStartEndRule implements RedactionRuleInterface
 {
@@ -15,12 +16,17 @@ final class NameRule extends AbstractStartEndRule implements RedactionRuleInterf
         parent::__construct(2, 2);
     }
 
-    public function apply(string $value, RedactorInterface $redactor): string
+    public function apply(string $value, RedactionRuleContextInterface $redactionRuleContext): string
     {
         $masked = preg_replace('/\b(\w{2})\w*(\w)\b/', '$1***$2', $value);
 
         if (null === $masked || $masked === $value) {
-            return parent::apply($value, $redactor);
+            return parent::apply($value, $redactionRuleContext);
+        }
+
+        $limit = $redactionRuleContext->getLengthLimit();
+        if (null !== $limit) {
+            return substr($masked, 0, $limit);
         }
 
         return $masked;

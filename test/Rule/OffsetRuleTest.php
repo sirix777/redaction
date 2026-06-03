@@ -16,8 +16,8 @@ final class OffsetRuleTest extends TestCase
 
     public function testSimpleOffsetRule(): void
     {
-        $rule = new OffsetRule(3);
-        $redactor = new Redactor(['password' => $rule], false);
+        $offsetRule = new OffsetRule(3);
+        $redactor = new Redactor(['password' => $offsetRule], false);
         $processed = $redactor->redact($this->convertNested(['username' => 'alice', 'password' => 'secret123']));
 
         $this->assertSame('sec******', $processed['password']);
@@ -33,7 +33,7 @@ final class OffsetRuleTest extends TestCase
             ],
             false
         ))
-            ->setObjectViewMode(ObjectViewModeEnum::Copy)
+            ->withObjectViewMode(ObjectViewModeEnum::Copy)
         ;
 
         $processed = $redactor->redact($this->convertNested([
@@ -51,8 +51,8 @@ final class OffsetRuleTest extends TestCase
 
     public function testNegativeOffset(): void
     {
-        $rule = new OffsetRule(-2);
-        $redactor = new Redactor(['password' => $rule], false);
+        $offsetRule = new OffsetRule(-2);
+        $redactor = new Redactor(['password' => $offsetRule], false);
         $processed = $redactor->redact($this->convertNested(['password' => 'secret123']));
 
         $this->assertSame('*******23', $processed['password']);

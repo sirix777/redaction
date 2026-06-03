@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Sirix\Redaction\Rule;
 
-use Sirix\Redaction\RedactorInterface;
+use InvalidArgumentException;
+use Sirix\Redaction\RedactionRuleContextInterface;
 
+use function intdiv;
 use function max;
 use function min;
 use function sprintf;
@@ -17,39 +19,70 @@ class AbstractStartEndRule
 {
     private const DEFAULT_TEMPLATE = '%s';
 
-    public function __construct(private readonly int $visibleStart, private readonly int $visibleEnd) {}
+    public function __construct(private readonly int $visibleStart, private readonly int $visibleEnd)
+    {
+        if ($visibleStart < 0 || $visibleEnd < 0) {
+            throw new InvalidArgumentException('visibleStart and visibleEnd must be >= 0');
+        }
+    }
 
-    public function apply(string $value, RedactorInterface $redactor): string
+    public function apply(string $value, RedactionRuleContextInterface $redactionRuleContext): string
     {
         $length = strlen($value);
         if (0 === $length) {
             return $value;
         }
 
+        $limit = $redactionRuleContext->getLengthLimit();
+
         if ($length <= $this->visibleStart + $this->visibleEnd) {
-            return substr($value, 0, 1) . str_repeat($redactor->getReplacement(), $length - 1);
+            $prefix = substr($value, 0, 1);
+            $maxMaskBytes = null === $limit ? null : max(0, $limit - strlen($prefix));
+            $result = $prefix . $this->repeatMask($redactionRuleContext->getReplacement(), $length - 1, $maxMaskBytes);
+
+            if (null !== $limit) {
+                return substr($result, 0, $limit);
+            }
+
+            return $result;
         }
 
         $visibleStart = min($this->visibleStart, $length);
         $visibleEnd = min($this->visibleEnd, $length - $visibleStart);
         $hiddenLength = max(0, $length - $visibleStart - $visibleEnd);
+        $prefix = substr($value, 0, $visibleStart);
+        $isDefaultTemplate = self::DEFAULT_TEMPLATE === $redactionRuleContext->getTemplate();
+        $maxMaskBytes = null === $limit ? null : max(0, $limit - strlen($prefix));
 
-        $hidden = str_repeat($redactor->getReplacement(), $hiddenLength);
-        $placeholder = sprintf($redactor->getTemplate(), $hidden);
+        $hidden = $this->repeatMask($redactionRuleContext->getReplacement(), $hiddenLength, $maxMaskBytes);
+        $placeholder = sprintf($redactionRuleContext->getTemplate(), $hidden);
 
-        $result = substr($value, 0, $visibleStart);
+        $result = $prefix . $placeholder;
 
-        $isDefaultTemplate = self::DEFAULT_TEMPLATE === $redactor->getTemplate();
-        $result .= $placeholder;
-
-        if ($isDefaultTemplate && $visibleEnd > 0) {
+        if ($isDefaultTemplate && $visibleEnd > 0 && (null === $limit || strlen($result) < $limit)) {
             $result .= substr($value, -$visibleEnd);
         }
 
-        if (null !== $redactor->getLengthLimit()) {
-            return substr($result, 0, $redactor->getLengthLimit());
+        if (null !== $limit) {
+            return substr($result, 0, $limit);
         }
 
         return $result;
+    }
+
+    private function repeatMask(string $replacement, int $repeatCount, ?int $maxBytes = null): string
+    {
+        if ($repeatCount <= 0 || '' === $replacement || 0 === $maxBytes) {
+            return '';
+        }
+
+        if (null === $maxBytes) {
+            return str_repeat($replacement, $repeatCount);
+        }
+
+        $replacementLength = strlen($replacement);
+        $neededRepeats = min($repeatCount, intdiv($maxBytes + $replacementLength - 1, $replacementLength));
+
+        return substr(str_repeat($replacement, $neededRepeats), 0, $maxBytes);
     }
 }

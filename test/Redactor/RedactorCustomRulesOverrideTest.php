@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Test\Sirix\Redaction\Redactor;
 
 use PHPUnit\Framework\TestCase;
+use Sirix\Redaction\RedactionRuleContextInterface;
 use Sirix\Redaction\Redactor;
-use Sirix\Redaction\RedactorInterface;
 use Sirix\Redaction\Rule\RedactionRuleInterface;
 
 final class RedactorCustomRulesOverrideTest extends TestCase
@@ -14,7 +14,7 @@ final class RedactorCustomRulesOverrideTest extends TestCase
     public function testCustomRulesOverrideDefaultsWhenKeysOverlap(): void
     {
         $customEmailRule = new class implements RedactionRuleInterface {
-            public function apply(string $value, RedactorInterface $redactor): string
+            public function apply(string $value, RedactionRuleContextInterface $redactionRuleContext): string
             {
                 return 'CUSTOM_EMAIL_MASK';
             }

@@ -10,6 +10,7 @@ use PHPUnit\Framework\TestCase;
 use Sirix\Redaction\Bridge\Monolog\RedactorProcessor;
 use Sirix\Redaction\Redactor;
 use Sirix\Redaction\Rule\OffsetRule;
+use Sirix\Redaction\Rule\RedactionRuleInterface;
 
 final class MonologIntegrationTest extends TestCase
 {
@@ -105,12 +106,17 @@ final class MonologIntegrationTest extends TestCase
         $this->assertEquals('ali****@example.com', $record->context['email']);
     }
 
+    /**
+     * @param array<string, RedactionRuleInterface> $rules
+     *
+     * @return array{0: Logger, 1: TestHandler}
+     */
     private function createLogger(array $rules = [], bool $useDefaultRules = true): array
     {
         $redactor = new Redactor($rules, $useDefaultRules);
-        $processor = new RedactorProcessor($redactor);
+        $redactorProcessor = new RedactorProcessor($redactor);
         $logger = new Logger('test');
-        $logger->pushProcessor($processor);
+        $logger->pushProcessor($redactorProcessor);
         $testHandler = new TestHandler();
         $logger->pushHandler($testHandler);
 

@@ -21,8 +21,8 @@ final class FullMaskRuleTest extends TestCase
 {
     public function testFullMaskRule(): void
     {
-        $rule = new FullMaskRule();
-        $redactor = new Redactor(['secret' => $rule], false);
+        $fullMaskRule = new FullMaskRule();
+        $redactor = new Redactor(['secret' => $fullMaskRule], false);
         $processed = $redactor->redact($this->convertNested(['secret' => 'my_secret_value']));
 
         $expected = str_repeat('*', strlen('my_secret_value'));
@@ -31,9 +31,10 @@ final class FullMaskRuleTest extends TestCase
 
     public function testCustomReplacement(): void
     {
-        $rule = new FullMaskRule();
-        $redactor = new Redactor(['secret' => $rule], false);
-        $redactor->setReplacement('#');
+        $fullMaskRule = new FullMaskRule();
+        $redactor = (new Redactor(['secret' => $fullMaskRule], false))
+            ->withReplacement('#')
+        ;
 
         $processed = $redactor->redact($this->convertNested(['secret' => 'my_secret_value']));
 
@@ -41,6 +42,11 @@ final class FullMaskRuleTest extends TestCase
         $this->assertSame($expected, $processed['secret']);
     }
 
+    /**
+     * @param array<int|string, mixed> $data
+     *
+     * @return array<int|string, mixed>
+     */
     private function convertNested(array $data): array
     {
         foreach ($data as &$value) {
@@ -60,6 +66,9 @@ final class FullMaskRuleTest extends TestCase
         return $data;
     }
 
+    /**
+     * @param array<int|string, mixed> $arr
+     */
     private function isAssoc(array $arr): bool
     {
         if ([] === $arr) {
