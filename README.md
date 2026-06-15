@@ -284,6 +284,34 @@ $redactor = new Redactor([
 
 Default rules and helper methods return fresh rule instances, avoiding static rule caches in long-running processes.
 
+### Regex key matcher performance guidance
+
+Regex key matchers are evaluated only when they are configured. Existing exact-key/default-rule setups keep the exact-map fast path and do not pay regex matching overhead.
+
+When matchers are configured, rule resolution is linear in the number of matchers for each scalar keyed value that does not match a custom exact rule first:
+
+```text
+scalar keyed values × configured key matchers
+```
+
+For best performance and predictable latency:
+
+- Prefer exact-key rules for known stable keys.
+- Keep the matcher list short; each additional matcher can add a `preg_match()` call per scalar key.
+- Combine related sensitive-key alternatives into one regex instead of several separate matchers:
+
+```php
+SharedRuleFactory::regexKey(
+    '/password|passwd|secret|token|api[_-]?key|authorization|cookie/i',
+    SharedRuleFactory::fixedValue('[Filtered]'),
+);
+```
+
+- Put highly specific exact custom rules in the string-keyed map; exact custom rules are checked before matchers.
+- Avoid broad or pathological regex patterns on very large payloads. Regex patterns are validated at matcher construction time, but expensive valid patterns can still affect runtime.
+- Use traversal limits (`max_depth`, `max_items_per_container`, `max_total_nodes`) for untrusted or very large inputs.
+- Benchmark representative payloads before adding many matchers to hot paths such as high-volume logging.
+
 If you need a custom masking strategy, implement `RedactionRuleInterface`. Rules receive a dedicated immutable `RedactionRuleContextInterface` snapshot with rule-level options (`replacement`, `template`, and `lengthLimit`) instead of the full redactor service:
 
 ```php
