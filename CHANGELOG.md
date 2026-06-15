@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-06-15
+### Added
+- Added key matcher support for custom rules via `Sirix\Redaction\Rule\Matcher\KeyRuleMatcherInterface`.
+- Added `RegexKeyRuleMatcher` for regex-based key matching without changing `RedactionRuleInterface`.
+- Added `SharedRuleFactory::regexKey()` to create regex key matchers with any existing redaction rule.
+- Added support for ordered matcher entries in `Redactor` custom rules and `RedactorFactory` configuration.
+- Added tests for regex key matching, matcher precedence, matcher ordering, object properties, nested arrays, traversal limits, invalid patterns, factory validation, and fail-closed rule exceptions.
+
+### Changed
+- `Redactor` now resolves rules with the following precedence: custom exact-key rules, custom key matchers in configured order, then default exact-key rules.
+- Exact-key redaction keeps a dedicated fast path when no matchers are configured, preserving performance for existing exact/default-rule users.
+- `RedactorFactory` now accepts string-keyed `RedactionRuleInterface` entries and integer-keyed/list `KeyRuleMatcherInterface` entries while rejecting ambiguous combinations.
+
+### Documented
+- Documented regex key matcher usage in README core and DI configuration examples.
+
 ## [2.0.0] - 2026-06-03
 ### Added
 - Added `sirix/container-resolver` as a runtime dependency for strict PSR-11 factory configuration.

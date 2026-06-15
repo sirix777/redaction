@@ -15,6 +15,7 @@ use Sirix\Redaction\Enum\ObjectViewModeEnum;
 use Sirix\Redaction\Factory\RedactorFactory;
 use Sirix\Redaction\Redactor;
 use Sirix\Redaction\RedactorInterface;
+use Sirix\Redaction\Rule\Factory\SharedRuleFactory;
 use Sirix\Redaction\Rule\OffsetRule;
 
 final class RedactorFactoryTest extends TestCase
@@ -254,6 +255,42 @@ final class RedactorFactoryTest extends TestCase
                 'options' => [
                     'rules' => [
                         'password' => 'not-a-rule',
+                    ],
+                ],
+            ],
+        ]));
+    }
+
+    /**
+     * @throws ContainerExceptionInterface
+     */
+    public function testAcceptsOrderedMatcherEntries(): void
+    {
+        $service = (new RedactorFactory())($this->containerWithConfig([
+            'redactor' => [
+                'options' => [
+                    'rules' => [
+                        SharedRuleFactory::regexKey('/token/i', SharedRuleFactory::fixedValue('[Filtered]')),
+                    ],
+                    'use_default_rules' => false,
+                ],
+            ],
+        ]));
+
+        $service = $this->assertRedactor($service);
+
+        $this->assertSame('[Filtered]', $service->redact(['accessToken' => 'secret'])['accessToken']);
+    }
+
+    public function testRejectsMatcherUnderStringKey(): void
+    {
+        $this->expectException(InvalidConfigValueException::class);
+
+        (new RedactorFactory())($this->containerWithConfig([
+            'redactor' => [
+                'options' => [
+                    'rules' => [
+                        'token' => SharedRuleFactory::regexKey('/token/i', SharedRuleFactory::fixedValue('[Filtered]')),
                     ],
                 ],
             ],

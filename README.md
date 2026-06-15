@@ -27,6 +27,7 @@ use Sirix\Redaction\Redactor;
 use Sirix\Redaction\RedactorOptions;
 use Sirix\Redaction\Rule\StartEndRule;
 use Sirix\Redaction\Rule\EmailRule;
+use Sirix\Redaction\Rule\Factory\SharedRuleFactory;
 use Sirix\Redaction\Rule\NameRule;
 use Sirix\Redaction\Enum\ObjectViewModeEnum;
 
@@ -43,6 +44,13 @@ $redactor = new Redactor(
         'name'  => new NameRule(),
         // Factory helper (equivalent):
         // 'name' => SharedRuleFactory::name(),
+
+        // Regex key matchers are ordered list entries. They match keys, while the
+        // nested rule still controls how the scalar value is masked.
+        SharedRuleFactory::regexKey(
+            '/password|passwd|secret|token|api[_-]?key|authorization|cookie/i',
+            SharedRuleFactory::fixedValue('[Filtered]'),
+        ),
     ],
     options: new RedactorOptions(
         objectViewMode: ObjectViewModeEnum::Copy,
@@ -52,6 +60,7 @@ $redactor = new Redactor(
     ),
 );
 
+// Rule precedence is: custom exact key, custom regex matcher in configured order, then defaults.
 // Note: By default, Redactor loads a set of sensible default rules.
 // To disable them and use only your own custom rules, pass useDefaultRules: false
 // e.g. $redactor = new Redactor(customRules: [...], useDefaultRules: false);
@@ -148,6 +157,10 @@ return [
             // Custom rules (same structure as passing to the constructor)
             'rules' => [
                 'card_number' => new Sirix\Redaction\Rule\StartEndRule(6, 4),
+                Sirix\Redaction\Rule\Factory\SharedRuleFactory::regexKey(
+                    '/password|passwd|secret|token|api[_-]?key|authorization|cookie/i',
+                    Sirix\Redaction\Rule\Factory\SharedRuleFactory::fixedValue('[Filtered]'),
+                ),
             ],
 
             // Whether to load built‑in default rules (bool, default: true)

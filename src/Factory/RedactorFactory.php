@@ -15,6 +15,7 @@ use Sirix\Redaction\Enum\ObjectViewModeEnum;
 use Sirix\Redaction\Redactor;
 use Sirix\Redaction\RedactorInterface;
 use Sirix\Redaction\RedactorOptions;
+use Sirix\Redaction\Rule\Matcher\KeyRuleMatcherInterface;
 use Sirix\Redaction\Rule\RedactionRuleInterface;
 
 use function is_callable;
@@ -73,23 +74,20 @@ final class RedactorFactory
     private function assertRules(array $rules): void
     {
         foreach ($rules as $key => $rule) {
-            if (! is_string($key)) {
-                throw InvalidConfigValueException::forType(
-                    'redactor.options.rules',
-                    'array<string, RedactionRuleInterface>',
-                    $rules,
-                    self::class,
-                );
+            if (is_string($key) && $rule instanceof RedactionRuleInterface) {
+                continue;
             }
 
-            if (! $rule instanceof RedactionRuleInterface) {
-                throw InvalidConfigValueException::forType(
-                    "redactor.options.rules.{$key}",
-                    RedactionRuleInterface::class,
-                    $rule,
-                    self::class,
-                );
+            if (is_int($key) && $rule instanceof KeyRuleMatcherInterface) {
+                continue;
             }
+
+            throw InvalidConfigValueException::forType(
+                "redactor.options.rules.{$key}",
+                'array<string, RedactionRuleInterface>|list<KeyRuleMatcherInterface>',
+                $rule,
+                self::class,
+            );
         }
     }
 

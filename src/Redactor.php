@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use ReflectionClass;
 use Sirix\Redaction\Enum\ObjectViewModeEnum;
 use Sirix\Redaction\Rule\Default\DefaultRules;
+use Sirix\Redaction\Rule\Matcher\KeyRuleMatcherInterface;
 use Sirix\Redaction\Rule\RedactionRuleInterface;
 use stdClass;
 use Throwable;
@@ -19,8 +20,10 @@ use function count;
 use function get_debug_type;
 use function get_object_vars;
 use function is_array;
+use function is_int;
 use function is_object;
 use function is_scalar;
+use function is_string;
 use function sprintf;
 
 final class Redactor implements RedactorInterface
@@ -30,11 +33,29 @@ final class Redactor implements RedactorInterface
     /**
      * @var array<string, RedactionRuleInterface>
      */
-    private array $rules = [];
+    private array $customExactRules = [];
+
+    /**
+     * @var list<KeyRuleMatcherInterface>
+     */
+    private array $customRuleMatchers = [];
+
+    /**
+     * @var array<string, RedactionRuleInterface>
+     */
+    private array $defaultExactRules = [];
+
+    /**
+     * @var array<string, RedactionRuleInterface>
+     */
+    private array $exactRules = [];
+
     private RedactorOptions $redactorOptions;
 
     /**
-     * @param array<string, mixed> $customRules
+     * String keys define exact-key rules; integer keys define ordered key matchers.
+     *
+     * @param array<array-key, mixed> $customRules
      */
     public function __construct(
         array $customRules = [],
@@ -42,14 +63,28 @@ final class Redactor implements RedactorInterface
         ?RedactorOptions $redactorOptions = null
     ) {
         $this->redactorOptions = $redactorOptions ?? new RedactorOptions();
-        $this->rules = $useDefaultRules ? $this->loadDefaultRules() : [];
+        $this->defaultExactRules = $useDefaultRules ? $this->loadDefaultRules() : [];
         foreach ($customRules as $key => $rule) {
-            if (! $rule instanceof RedactionRuleInterface) {
-                throw new InvalidArgumentException(
-                    'All sensitive keys must be instances of RedactionRuleInterface'
-                );
+            if (is_string($key) && $rule instanceof RedactionRuleInterface) {
+                $this->customExactRules[$key] = $rule;
+
+                continue;
             }
-            $this->rules[$key] = $rule;
+
+            if (is_int($key) && $rule instanceof KeyRuleMatcherInterface) {
+                $this->customRuleMatchers[] = $rule;
+
+                continue;
+            }
+
+            throw new InvalidArgumentException(
+                'Custom rules must be exact RedactionRuleInterface entries or ordered KeyRuleMatcherInterface entries'
+            );
+        }
+
+        $this->exactRules = $this->defaultExactRules;
+        foreach ($this->customExactRules as $key => $rule) {
+            $this->exactRules[$key] = $rule;
         }
     }
 
@@ -57,7 +92,7 @@ final class Redactor implements RedactorInterface
     {
         $redactionContext = RedactionContext::forOptions($this->redactorOptions);
 
-        return $this->processValueCopy($rawData, $this->rules, $redactionContext);
+        return $this->processValueCopy($rawData, $redactionContext);
     }
 
     public function withReplacement(string $replacement): self
@@ -158,10 +193,7 @@ final class Redactor implements RedactorInterface
         return $clone;
     }
 
-    /**
-     * @param array<string, RedactionRuleInterface> $rules
-     */
-    private function processValueCopy(mixed $value, array $rules, RedactionContext $redactionContext): mixed
+    private function processValueCopy(mixed $value, RedactionContext $redactionContext): mixed
     {
         if (is_array($value)) {
             if (! $this->enterDepth($redactionContext)) {
@@ -171,14 +203,14 @@ final class Redactor implements RedactorInterface
             }
 
             try {
-                return $this->processContainerCopy($value, $rules, $redactionContext);
+                return $this->processContainerCopy($value, $redactionContext);
             } finally {
                 $this->leaveDepth($redactionContext);
             }
         }
 
         if (is_object($value) && $this->shouldProcessObject($value)) {
-            return $this->processObjectCopy($value, $rules, $redactionContext);
+            return $this->processObjectCopy($value, $redactionContext);
         }
 
         return $value;
@@ -190,12 +222,11 @@ final class Redactor implements RedactorInterface
     }
 
     /**
-     * @param array<mixed>                          $array
-     * @param array<string, RedactionRuleInterface> $rules
+     * @param array<mixed> $array
      *
      * @return array<mixed>
      */
-    private function processContainerCopy(array $array, array $rules, RedactionContext $redactionContext): array
+    private function processContainerCopy(array $array, RedactionContext $redactionContext): array
     {
         $result = null;
         $count = 0;
@@ -210,7 +241,7 @@ final class Redactor implements RedactorInterface
                 return $this->appendOverflowPlaceholder($truncated, $array);
             }
 
-            $processedItem = $this->processChildCopy($key, $item, $rules, $redactionContext);
+            $processedItem = $this->processChildCopy($key, $item, $redactionContext);
 
             if ($processedItem !== $item && null === $result) {
                 $result = array_slice($array, 0, $count, true);
@@ -233,10 +264,7 @@ final class Redactor implements RedactorInterface
         return $result ?? $array;
     }
 
-    /**
-     * @param array<string, RedactionRuleInterface> $rules
-     */
-    private function processObjectCopy(object $object, array $rules, RedactionContext $redactionContext): mixed
+    private function processObjectCopy(object $object, RedactionContext $redactionContext): mixed
     {
         if (ObjectViewModeEnum::Skip === $this->redactorOptions->objectViewMode) {
             return sprintf('[object %s]', get_debug_type($object));
@@ -253,7 +281,6 @@ final class Redactor implements RedactorInterface
             if (ObjectViewModeEnum::PublicArray === $this->redactorOptions->objectViewMode) {
                 [$properties] = $this->processObjectPropertiesCopy(
                     $object,
-                    $rules,
                     $redactionContext,
                     false
                 );
@@ -261,7 +288,7 @@ final class Redactor implements RedactorInterface
                 return $properties;
             }
 
-            return $this->processFullObjectCopy($object, $rules, $redactionContext);
+            return $this->processFullObjectCopy($object, $redactionContext);
         } finally {
             --$redactionContext->currentDepth;
             $redactionContext->seenObjects?->offsetUnset($object);
@@ -292,12 +319,9 @@ final class Redactor implements RedactorInterface
         return false;
     }
 
-    /**
-     * @param array<string, RedactionRuleInterface> $rules
-     */
-    private function processFullObjectCopy(object $object, array $rules, RedactionContext $redactionContext): object
+    private function processFullObjectCopy(object $object, RedactionContext $redactionContext): object
     {
-        [$properties] = $this->processObjectPropertiesCopy($object, $rules, $redactionContext, true);
+        [$properties] = $this->processObjectPropertiesCopy($object, $redactionContext, true);
 
         $copy = new stdClass();
         foreach ($properties as $name => $value) {
@@ -308,13 +332,10 @@ final class Redactor implements RedactorInterface
     }
 
     /**
-     * @param array<string, RedactionRuleInterface> $rules
-     *
      * @return array{0: array<string, mixed>, 1: bool, 2: bool}
      */
     private function processObjectPropertiesCopy(
         object $object,
-        array $rules,
         RedactionContext $redactionContext,
         bool $includeNonPublic,
     ): array {
@@ -335,7 +356,7 @@ final class Redactor implements RedactorInterface
                 break;
             }
 
-            $processed = $this->processObjectPropertyValue($name, $value, $rules, $redactionContext);
+            $processed = $this->processObjectPropertyValue($name, $value, $redactionContext);
             $changed = $changed || $processed !== $value;
             $result[$name] = $processed;
             ++$count;
@@ -379,7 +400,7 @@ final class Redactor implements RedactorInterface
                 break;
             }
 
-            $processed = $this->processObjectPropertyValue($name, $value, $rules, $redactionContext);
+            $processed = $this->processObjectPropertyValue($name, $value, $redactionContext);
             $changed = $changed || $processed !== $value;
             $result[$name] = $processed;
             ++$count;
@@ -395,61 +416,84 @@ final class Redactor implements RedactorInterface
         return [$result, $changed, $truncated];
     }
 
-    /**
-     * @param array<string, RedactionRuleInterface> $rules
-     */
-    private function processObjectPropertyValue(
-        string $key,
-        mixed $value,
-        array $rules,
-        RedactionContext $redactionContext,
-    ): mixed {
+    private function processObjectPropertyValue(string $key, mixed $value, RedactionContext $redactionContext): mixed
+    {
         if ($this->hitNodeLimit('object_property', $key, $redactionContext)) {
             return $this->overflowValue();
         }
 
-        return $this->maskValueCopy($key, $value, $rules, $redactionContext);
+        return $this->maskValueCopy($key, $value, $redactionContext);
     }
 
-    /**
-     * @param array<string, RedactionRuleInterface> $rules
-     */
-    private function processChildCopy(
-        int|string $key,
-        mixed $item,
-        array $rules,
-        RedactionContext $redactionContext
-    ): mixed {
+    private function processChildCopy(int|string $key, mixed $item, RedactionContext $redactionContext): mixed
+    {
         if ($this->hitNodeLimit('node', $key, $redactionContext)) {
             return $this->overflowValue();
         }
 
-        if (is_scalar($item) && isset($rules[$key])) {
-            return $this->applyRule($key, $item, $rules[$key], $redactionContext);
+        if (is_scalar($item)) {
+            if ([] === $this->customRuleMatchers) {
+                if (isset($this->exactRules[$key])) {
+                    return $this->applyRule($key, $item, $this->exactRules[$key], $redactionContext);
+                }
+            } else {
+                $rule = $this->resolveRule($key);
+                if ($rule instanceof RedactionRuleInterface) {
+                    return $this->applyRule($key, $item, $rule, $redactionContext);
+                }
+            }
         }
 
         if (is_array($item) || (is_object($item) && $this->shouldProcessObject($item))) {
-            return $this->processValueCopy($item, $rules, $redactionContext);
+            return $this->processValueCopy($item, $redactionContext);
         }
 
         return $item;
     }
 
-    /**
-     * @param array<string, RedactionRuleInterface> $rules
-     */
-    private function maskValueCopy(string $key, mixed $value, array $rules, RedactionContext $redactionContext): mixed
+    private function maskValueCopy(string $key, mixed $value, RedactionContext $redactionContext): mixed
     {
-        $rule = $rules[$key] ?? null;
-        if (is_scalar($value) && $rule instanceof RedactionRuleInterface) {
-            return $this->applyRule($key, $value, $rule, $redactionContext);
+        if (is_scalar($value)) {
+            if ([] === $this->customRuleMatchers) {
+                if (isset($this->exactRules[$key])) {
+                    return $this->applyRule($key, $value, $this->exactRules[$key], $redactionContext);
+                }
+            } else {
+                $rule = $this->resolveRule($key);
+                if ($rule instanceof RedactionRuleInterface) {
+                    return $this->applyRule($key, $value, $rule, $redactionContext);
+                }
+            }
         }
 
         if (is_array($value) || (is_object($value) && $this->shouldProcessObject($value))) {
-            return $this->processValueCopy($value, $rules, $redactionContext);
+            return $this->processValueCopy($value, $redactionContext);
         }
 
         return $value;
+    }
+
+    private function resolveRule(int|string $key): ?RedactionRuleInterface
+    {
+        if (! is_string($key)) {
+            return null;
+        }
+
+        if ([] === $this->customRuleMatchers) {
+            return $this->exactRules[$key] ?? null;
+        }
+
+        if (isset($this->customExactRules[$key])) {
+            return $this->customExactRules[$key];
+        }
+
+        foreach ($this->customRuleMatchers as $customRuleMatcher) {
+            if ($customRuleMatcher->matches($key)) {
+                return $customRuleMatcher->rule();
+            }
+        }
+
+        return $this->defaultExactRules[$key] ?? null;
     }
 
     private function applyRule(
