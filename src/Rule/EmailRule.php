@@ -25,7 +25,7 @@ final class EmailRule extends AbstractStartEndRule implements RedactionRuleInter
         }
 
         $maskedPrefix = substr($value, 0, 3) . '****';
-        $limit = $redactionRuleContext->getLengthLimit();
+        $limit        = $redactionRuleContext->getLengthLimit();
         if (null === $limit) {
             return $maskedPrefix . substr($value, $atPosition);
         }

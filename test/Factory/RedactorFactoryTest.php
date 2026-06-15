@@ -15,6 +15,7 @@ use Sirix\Redaction\Enum\ObjectViewModeEnum;
 use Sirix\Redaction\Factory\RedactorFactory;
 use Sirix\Redaction\Redactor;
 use Sirix\Redaction\RedactorInterface;
+use Sirix\Redaction\Rule\Factory\SharedRuleFactory;
 use Sirix\Redaction\Rule\OffsetRule;
 
 final class RedactorFactoryTest extends TestCase
@@ -25,7 +26,7 @@ final class RedactorFactoryTest extends TestCase
     public function testCreatesRedactorWithDefaultsWhenNoConfig(): void
     {
         $redactorFactory = new RedactorFactory();
-        $service = $redactorFactory($this->containerWithoutConfig());
+        $service         = $redactorFactory($this->containerWithoutConfig());
 
         $this->assertInstanceOf(RedactorInterface::class, $service);
         $service = $this->assertRedactor($service);
@@ -46,24 +47,24 @@ final class RedactorFactoryTest extends TestCase
      */
     public function testAppliesStrictlyTypedOptions(): void
     {
-        $callback = static function(array $info): void {};
+        $callback        = static function(array $info): void {};
         $redactorFactory = new RedactorFactory();
-        $service = $redactorFactory($this->containerWithConfig([
+        $service         = $redactorFactory($this->containerWithConfig([
             'redactor' => [
                 'options' => [
-                    'rules' => [
+                    'rules'                      => [
                         'password' => new OffsetRule(2),
                     ],
-                    'use_default_rules' => false,
-                    'replacement' => 'X',
-                    'template' => '(%s)',
-                    'length_limit' => 5,
-                    'max_depth' => 2,
-                    'max_items_per_container' => 1,
-                    'max_total_nodes' => 10,
-                    'object_view_mode' => ObjectViewModeEnum::Copy,
+                    'use_default_rules'          => false,
+                    'replacement'                => 'X',
+                    'template'                   => '(%s)',
+                    'length_limit'               => 5,
+                    'max_depth'                  => 2,
+                    'max_items_per_container'    => 1,
+                    'max_total_nodes'            => 10,
+                    'object_view_mode'           => ObjectViewModeEnum::Copy,
                     'on_limit_exceeded_callback' => $callback,
-                    'overflow_placeholder' => '[TRUNCATED]',
+                    'overflow_placeholder'       => '[TRUNCATED]',
                 ],
             ],
         ]));
@@ -79,7 +80,9 @@ final class RedactorFactoryTest extends TestCase
         $this->assertSame(ObjectViewModeEnum::Copy, $service->getObjectViewMode());
         $this->assertSame($callback, $service->getOnLimitExceededCallback());
         $this->assertSame('[TRUNCATED]', $service->getOverflowPlaceholder());
-        $this->assertSame('se(XX', $service->redact(['password' => 'secret'])['password']);
+        $this->assertSame('se(XX', $service->redact([
+            'password' => 'secret',
+        ])['password']);
     }
 
     /**
@@ -88,7 +91,7 @@ final class RedactorFactoryTest extends TestCase
     public function testAcceptsObjectViewModeAsStringBackedValue(): void
     {
         $redactorFactory = new RedactorFactory();
-        $service = $redactorFactory($this->containerWithConfig([
+        $service         = $redactorFactory($this->containerWithConfig([
             'redactor' => [
                 'options' => [
                     'object_view_mode' => 'copy',
@@ -107,14 +110,14 @@ final class RedactorFactoryTest extends TestCase
     public function testAllowsNullForNullableOptions(): void
     {
         $redactorFactory = new RedactorFactory();
-        $service = $redactorFactory($this->containerWithConfig([
+        $service         = $redactorFactory($this->containerWithConfig([
             'redactor' => [
                 'options' => [
-                    'length_limit' => null,
-                    'max_depth' => null,
+                    'length_limit'            => null,
+                    'max_depth'               => null,
                     'max_items_per_container' => null,
-                    'max_total_nodes' => null,
-                    'overflow_placeholder' => null,
+                    'max_total_nodes'         => null,
+                    'overflow_placeholder'    => null,
                 ],
             ],
         ]));
@@ -254,6 +257,44 @@ final class RedactorFactoryTest extends TestCase
                 'options' => [
                     'rules' => [
                         'password' => 'not-a-rule',
+                    ],
+                ],
+            ],
+        ]));
+    }
+
+    /**
+     * @throws ContainerExceptionInterface
+     */
+    public function testAcceptsOrderedMatcherEntries(): void
+    {
+        $service = (new RedactorFactory())($this->containerWithConfig([
+            'redactor' => [
+                'options' => [
+                    'rules'             => [
+                        SharedRuleFactory::regexKey('/token/i', SharedRuleFactory::fixedValue('[Filtered]')),
+                    ],
+                    'use_default_rules' => false,
+                ],
+            ],
+        ]));
+
+        $service = $this->assertRedactor($service);
+
+        $this->assertSame('[Filtered]', $service->redact([
+            'accessToken' => 'secret',
+        ])['accessToken']);
+    }
+
+    public function testRejectsMatcherUnderStringKey(): void
+    {
+        $this->expectException(InvalidConfigValueException::class);
+
+        (new RedactorFactory())($this->containerWithConfig([
+            'redactor' => [
+                'options' => [
+                    'rules' => [
+                        'token' => SharedRuleFactory::regexKey('/token/i', SharedRuleFactory::fixedValue('[Filtered]')),
                     ],
                 ],
             ],

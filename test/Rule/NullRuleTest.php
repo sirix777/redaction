@@ -17,8 +17,12 @@ final class NullRuleTest extends TestCase
     public function testNullRule(): void
     {
         $nullRule = new NullRule();
-        $redactor = new Redactor(['password' => $nullRule], false);
-        $processed = $redactor->redact($this->convertNested(['password' => 'secret123']));
+        $redactor = new Redactor([
+            'password' => $nullRule,
+        ], false);
+        $processed = $redactor->redact($this->convertNested([
+            'password' => 'secret123',
+        ]));
 
         $this->assertNull($processed['password']);
     }
@@ -27,7 +31,7 @@ final class NullRuleTest extends TestCase
     {
         $redactor = (new Redactor(
             [
-                'apiKey' => new NullRule(),
+                'apiKey'   => new NullRule(),
                 'username' => new NullRule(),
             ],
             false
@@ -37,9 +41,9 @@ final class NullRuleTest extends TestCase
 
         $processed = $redactor->redact($this->convertNested([
             'credentials' => [
-                'apiKey' => 'abc123xyz',
+                'apiKey'   => 'abc123xyz',
                 'username' => 'admin',
-                'domain' => 'example.com',
+                'domain'   => 'example.com',
             ],
         ]));
 

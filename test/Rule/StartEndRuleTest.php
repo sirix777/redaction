@@ -19,8 +19,8 @@ final class StartEndRuleTest extends TestCase
         $redactor = (new Redactor(
             [
                 'superpupersecret' => new StartEndRule(5, 4),
-                'secret' => new StartEndRule(2, 3),
-                'secret2' => new StartEndRule(2, 0),
+                'secret'           => new StartEndRule(2, 3),
+                'secret2'          => new StartEndRule(2, 0),
             ],
             false
         ))
@@ -29,8 +29,8 @@ final class StartEndRuleTest extends TestCase
 
         $value = $this->convertNested([
             'superpupersecret' => 'superpupersecret',
-            'objecthere' => [
-                'secret' => 'donttellanyone',
+            'objecthere'       => [
+                'secret'  => 'donttellanyone',
                 'secret2' => 'donttellanyone2',
             ],
         ]);
@@ -45,11 +45,15 @@ final class StartEndRuleTest extends TestCase
     public function testCustomTemplate(): void
     {
         $startEndRule = new StartEndRule(2, 3);
-        $redactor = (new Redactor(['secret' => $startEndRule], false))
+        $redactor     = (new Redactor([
+            'secret' => $startEndRule,
+        ], false))
             ->withTemplate('%s(redacted)')
         ;
 
-        $processed = $redactor->redact($this->convertNested(['secret' => 'my_secret_value']));
+        $processed = $redactor->redact($this->convertNested([
+            'secret' => 'my_secret_value',
+        ]));
 
         $this->assertSame('my**********(redacted)', $processed['secret']);
     }
@@ -57,8 +61,12 @@ final class StartEndRuleTest extends TestCase
     public function testZeroVisibleStart(): void
     {
         $startEndRule = new StartEndRule(0, 2);
-        $redactor = new Redactor(['secret' => $startEndRule], false);
-        $processed = $redactor->redact($this->convertNested(['secret' => 'my_secret_value']));
+        $redactor     = new Redactor([
+            'secret' => $startEndRule,
+        ], false);
+        $processed = $redactor->redact($this->convertNested([
+            'secret' => 'my_secret_value',
+        ]));
 
         $this->assertSame('*************ue', $processed['secret']);
     }
@@ -66,8 +74,12 @@ final class StartEndRuleTest extends TestCase
     public function testZeroVisibleEnd(): void
     {
         $startEndRule = new StartEndRule(2, 0);
-        $redactor = new Redactor(['secret' => $startEndRule], false);
-        $processed = $redactor->redact($this->convertNested(['secret' => 'my_secret_value']));
+        $redactor     = new Redactor([
+            'secret' => $startEndRule,
+        ], false);
+        $processed = $redactor->redact($this->convertNested([
+            'secret' => 'my_secret_value',
+        ]));
 
         $this->assertSame('my*************', $processed['secret']);
     }
@@ -75,17 +87,33 @@ final class StartEndRuleTest extends TestCase
     public function testShortValues(): void
     {
         $startEndRule = new StartEndRule(2, 2);
-        $redactor = new Redactor(['short' => $startEndRule], false);
+        $redactor     = new Redactor([
+            'short' => $startEndRule,
+        ], false);
 
         $cases = [
-            ['value' => 'to', 'expected' => 't*'],
-            ['value' => 'tom', 'expected' => 't**'],
-            ['value' => 't', 'expected' => 't'],
-            ['value' => null, 'expected' => null],
+            [
+                'value'    => 'to',
+                'expected' => 't*',
+            ],
+            [
+                'value'    => 'tom',
+                'expected' => 't**',
+            ],
+            [
+                'value'    => 't',
+                'expected' => 't',
+            ],
+            [
+                'value'    => null,
+                'expected' => null,
+            ],
         ];
 
         foreach ($cases as $i => $case) {
-            $processed = $redactor->redact($this->convertNested(['short' => $case['value']]));
+            $processed = $redactor->redact($this->convertNested([
+                'short' => $case['value'],
+            ]));
 
             $this->assertSame($case['expected'], $processed['short'], "Failed on case #{$i}");
         }

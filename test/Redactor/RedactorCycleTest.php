@@ -13,9 +13,9 @@ final class RedactorCycleTest extends TestCase
 {
     public function testObjectCycleIsDetectedInCopyMode(): void
     {
-        $a = new stdClass();
-        $b = new stdClass();
-        $a->child = $b;
+        $a         = new stdClass();
+        $b         = new stdClass();
+        $a->child  = $b;
         $b->parent = $a;
 
         $redactor = (new Redactor([], false))
@@ -31,8 +31,8 @@ final class RedactorCycleTest extends TestCase
 
     public function testObjectCycleInvokesLimitCallback(): void
     {
-        $events = [];
-        $a = new stdClass();
+        $events  = [];
+        $a       = new stdClass();
         $a->self = $a;
 
         $redactor = (new Redactor([], false))
@@ -51,7 +51,7 @@ final class RedactorCycleTest extends TestCase
 
     public function testObjectCycleWithNullPlaceholderReturnsNullInsteadOfRawObject(): void
     {
-        $a = new stdClass();
+        $a       = new stdClass();
         $a->self = $a;
 
         $redactor = (new Redactor([], false))
@@ -66,7 +66,7 @@ final class RedactorCycleTest extends TestCase
 
     public function testArraySelfReferenceIsStoppedByMaxDepth(): void
     {
-        $data = [];
+        $data         = [];
         $data['self'] = &$data;
 
         $redactor = (new Redactor([], false))

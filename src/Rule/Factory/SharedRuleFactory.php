@@ -7,6 +7,8 @@ namespace Sirix\Redaction\Rule\Factory;
 use Sirix\Redaction\Rule\EmailRule;
 use Sirix\Redaction\Rule\FixedValueRule;
 use Sirix\Redaction\Rule\FullMaskRule;
+use Sirix\Redaction\Rule\Matcher\KeyRuleMatcherInterface;
+use Sirix\Redaction\Rule\Matcher\RegexKeyRuleMatcher;
 use Sirix\Redaction\Rule\NameRule;
 use Sirix\Redaction\Rule\NullRule;
 use Sirix\Redaction\Rule\OffsetRule;
@@ -60,5 +62,10 @@ final class SharedRuleFactory
     public static function offset(int $offset): RedactionRuleInterface
     {
         return new OffsetRule($offset);
+    }
+
+    public static function regexKey(string $pattern, RedactionRuleInterface $redactionRule): KeyRuleMatcherInterface
+    {
+        return new RegexKeyRuleMatcher($pattern, $redactionRule);
     }
 }

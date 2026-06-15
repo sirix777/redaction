@@ -20,8 +20,8 @@ final class RedactorNestedKeysTest extends TestCase
     {
         $redactor = (new Redactor(
             [
-                'user' => new EmailRule(),
-                'name' => new OffsetRule(1),
+                'user'  => new EmailRule(),
+                'name'  => new OffsetRule(1),
                 'phone' => new OffsetRule(5),
             ],
             false
@@ -31,9 +31,9 @@ final class RedactorNestedKeysTest extends TestCase
 
         $data = [
             'card_number' => '1234567890123456',
-            'user' => [
-                'user' => 'john.doe@example.com',
-                'name' => 'John Doe',
+            'user'        => [
+                'user'  => 'john.doe@example.com',
+                'name'  => 'John Doe',
                 'phone' => '+44123456789012',
             ],
         ];
@@ -96,7 +96,7 @@ final class RedactorNestedKeysTest extends TestCase
 
         $data = [
             'token' => [
-                'auth' => [
+                'auth'    => [
                     'token' => 'bearer_token_123',  // Строка
                 ],
                 'refresh' => [
@@ -126,8 +126,10 @@ final class RedactorNestedKeysTest extends TestCase
         ], false);
 
         $data = [
-            'config' => ['setting1' => 'value1'],
-            'other' => [
+            'config' => [
+                'setting1' => 'value1',
+            ],
+            'other'  => [
                 'config' => 'secret_config_value',
             ],
         ];

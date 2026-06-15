@@ -41,7 +41,7 @@ final class MonologIntegrationTest extends TestCase
         $logger->info('Nested context', [
             'user' => [
                 'username' => 'bob',
-                'token' => 'abcd1234',
+                'token'    => 'abcd1234',
             ],
         ]);
 
@@ -113,9 +113,9 @@ final class MonologIntegrationTest extends TestCase
      */
     private function createLogger(array $rules = [], bool $useDefaultRules = true): array
     {
-        $redactor = new Redactor($rules, $useDefaultRules);
+        $redactor          = new Redactor($rules, $useDefaultRules);
         $redactorProcessor = new RedactorProcessor($redactor);
-        $logger = new Logger('test');
+        $logger            = new Logger('test');
         $logger->pushProcessor($redactorProcessor);
         $testHandler = new TestHandler();
         $logger->pushHandler($testHandler);

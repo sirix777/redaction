@@ -27,7 +27,9 @@ final class RedactorLimitsTest extends TestCase
             ],
         ]);
 
-        $this->assertSame(['user' => '[DEPTH]'], $result);
+        $this->assertSame([
+            'user' => '[DEPTH]',
+        ], $result);
     }
 
     public function testMaxDepthZeroReplacesTopLevelContainer(): void
@@ -37,7 +39,9 @@ final class RedactorLimitsTest extends TestCase
             ->withOverflowPlaceholder('[DEPTH]')
         ;
 
-        $this->assertSame('[DEPTH]', $redactor->redact(['password' => 'secret']));
+        $this->assertSame('[DEPTH]', $redactor->redact([
+            'password' => 'secret',
+        ]));
     }
 
     public function testOverflowPlaceholderNullReplacesExceededBranchWithNull(): void
@@ -55,12 +59,14 @@ final class RedactorLimitsTest extends TestCase
             ],
         ]);
 
-        $this->assertSame(['user' => null], $result);
+        $this->assertSame([
+            'user' => null,
+        ], $result);
     }
 
     public function testOverflowPlaceholderNullReplacesExceededObjectBranchWithNull(): void
     {
-        $user = new stdClass();
+        $user           = new stdClass();
         $user->password = 'raw-secret';
 
         $redactor = (new Redactor([
@@ -71,14 +77,18 @@ final class RedactorLimitsTest extends TestCase
             ->withOverflowPlaceholder(null)
         ;
 
-        $this->assertSame(['user' => null], $redactor->redact(['user' => $user]));
+        $this->assertSame([
+            'user' => null,
+        ], $redactor->redact([
+            'user' => $user,
+        ]));
     }
 
     public function testMaxItemsPerContainerTruncatesAssociativeArray(): void
     {
         $redactor = (new Redactor([
             'password' => new OffsetRule(2),
-            'token' => new OffsetRule(2),
+            'token'    => new OffsetRule(2),
         ], false))
             ->withMaxItemsPerContainer(1)
             ->withOverflowPlaceholder('...')
@@ -86,11 +96,11 @@ final class RedactorLimitsTest extends TestCase
 
         $result = $redactor->redact([
             'password' => 'secret',
-            'token' => 'abcdef',
+            'token'    => 'abcdef',
         ]);
 
         $this->assertSame([
-            'password' => 'se****',
+            'password'               => 'se****',
             '__redaction_overflow__' => '...',
         ], $result);
     }
@@ -105,12 +115,18 @@ final class RedactorLimitsTest extends TestCase
         ;
 
         $result = $redactor->redact([
-            ['password' => 'secret'],
-            ['password' => 'hidden'],
+            [
+                'password' => 'secret',
+            ],
+            [
+                'password' => 'hidden',
+            ],
         ]);
 
         $this->assertSame([
-            ['password' => 'se****'],
+            [
+                'password' => 'se****',
+            ],
             '...',
         ], $result);
     }
@@ -132,14 +148,19 @@ final class RedactorLimitsTest extends TestCase
             ->withOverflowPlaceholder(null)
         ;
 
-        $this->assertSame(['a' => 1], $redactor->redact(['a' => 1, 'b' => 2]));
+        $this->assertSame([
+            'a' => 1,
+        ], $redactor->redact([
+            'a' => 1,
+            'b' => 2,
+        ]));
     }
 
     public function testMaxTotalNodesStopsAfterLimit(): void
     {
         $redactor = (new Redactor([
             'password' => new OffsetRule(2),
-            'token' => new OffsetRule(2),
+            'token'    => new OffsetRule(2),
         ], false))
             ->withMaxTotalNodes(1)
             ->withOverflowPlaceholder('[NODE]')
@@ -147,21 +168,21 @@ final class RedactorLimitsTest extends TestCase
 
         $result = $redactor->redact([
             'password' => 'secret',
-            'token' => 'abcdef',
+            'token'    => 'abcdef',
         ]);
 
         $this->assertSame([
             'password' => 'se****',
-            'token' => '[NODE]',
+            'token'    => '[NODE]',
         ], $result);
     }
 
     public function testMaxTotalNodesStopsIteratingAfterFirstExceededNode(): void
     {
-        $events = [];
+        $events   = [];
         $redactor = (new Redactor([
             'password' => new OffsetRule(2),
-            'token' => new OffsetRule(2),
+            'token'    => new OffsetRule(2),
         ], false))
             ->withMaxTotalNodes(1)
             ->withOverflowPlaceholder('[NODE]')
@@ -172,13 +193,13 @@ final class RedactorLimitsTest extends TestCase
 
         $result = $redactor->redact([
             'password' => 'secret',
-            'token' => 'abcdef',
-            'api_key' => 'raw-secret',
+            'token'    => 'abcdef',
+            'api_key'  => 'raw-secret',
         ]);
 
         $this->assertSame([
-            'password' => 'se****',
-            'token' => '[NODE]',
+            'password'               => 'se****',
+            'token'                  => '[NODE]',
             '__redaction_overflow__' => '[NODE]',
         ], $result);
         $this->assertCount(1, $events);
@@ -192,7 +213,11 @@ final class RedactorLimitsTest extends TestCase
             ->withOverflowPlaceholder('[NODE]')
         ;
 
-        $this->assertSame(['a' => '[NODE]'], $redactor->redact(['a' => 1]));
+        $this->assertSame([
+            'a' => '[NODE]',
+        ], $redactor->redact([
+            'a' => 1,
+        ]));
     }
 
     public function testMaxTotalNodesWithNullPlaceholderDoesNotKeepExceededRawValue(): void
@@ -205,14 +230,20 @@ final class RedactorLimitsTest extends TestCase
         ;
 
         $this->assertSame(
-            ['password' => 'se****', 'token' => null],
-            $redactor->redact(['password' => 'secret', 'token' => 'raw-secret']),
+            [
+                'password' => 'se****',
+                'token'    => null,
+            ],
+            $redactor->redact([
+                'password' => 'secret',
+                'token'    => 'raw-secret',
+            ]),
         );
     }
 
     public function testLimitCallbackReceivesExpectedPayload(): void
     {
-        $events = [];
+        $events   = [];
         $redactor = (new Redactor([], false))
             ->withMaxItemsPerContainer(1)
             ->withOnLimitExceededCallback(static function(array $info) use (&$events): void {
@@ -220,7 +251,10 @@ final class RedactorLimitsTest extends TestCase
             })
         ;
 
-        $redactor->redact(['a' => 1, 'b' => 2]);
+        $redactor->redact([
+            'a' => 1,
+            'b' => 2,
+        ]);
 
         $this->assertCount(1, $events);
         $this->assertSame('maxItemsPerContainer', $events[0]['type']);
@@ -231,7 +265,7 @@ final class RedactorLimitsTest extends TestCase
 
     public function testLimitCallbackIsNotCalledWithoutLimitExceeded(): void
     {
-        $called = false;
+        $called   = false;
         $redactor = (new Redactor([], false))
             ->withMaxItemsPerContainer(3)
             ->withOnLimitExceededCallback(static function() use (&$called): void {
@@ -239,7 +273,10 @@ final class RedactorLimitsTest extends TestCase
             })
         ;
 
-        $redactor->redact(['a' => 1, 'b' => 2]);
+        $redactor->redact([
+            'a' => 1,
+            'b' => 2,
+        ]);
 
         $this->assertFalse($called);
     }
@@ -255,7 +292,7 @@ final class RedactorLimitsTest extends TestCase
 
         $first = $redactor->redact([
             'password' => 'secret',
-            'other' => 'value',
+            'other'    => 'value',
         ]);
         $second = $redactor->redact([
             'password' => 'secret',

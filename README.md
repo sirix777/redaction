@@ -27,6 +27,7 @@ use Sirix\Redaction\Redactor;
 use Sirix\Redaction\RedactorOptions;
 use Sirix\Redaction\Rule\StartEndRule;
 use Sirix\Redaction\Rule\EmailRule;
+use Sirix\Redaction\Rule\Factory\SharedRuleFactory;
 use Sirix\Redaction\Rule\NameRule;
 use Sirix\Redaction\Enum\ObjectViewModeEnum;
 
@@ -43,6 +44,13 @@ $redactor = new Redactor(
         'name'  => new NameRule(),
         // Factory helper (equivalent):
         // 'name' => SharedRuleFactory::name(),
+
+        // Regex key matchers are ordered list entries. They match keys, while the
+        // nested rule still controls how the scalar value is masked.
+        SharedRuleFactory::regexKey(
+            '/password|passwd|secret|token|api[_-]?key|authorization|cookie/i',
+            SharedRuleFactory::fixedValue('[Filtered]'),
+        ),
     ],
     options: new RedactorOptions(
         objectViewMode: ObjectViewModeEnum::Copy,
@@ -52,6 +60,7 @@ $redactor = new Redactor(
     ),
 );
 
+// Rule precedence is: custom exact key, custom regex matcher in configured order, then defaults.
 // Note: By default, Redactor loads a set of sensible default rules.
 // To disable them and use only your own custom rules, pass useDefaultRules: false
 // e.g. $redactor = new Redactor(customRules: [...], useDefaultRules: false);
@@ -148,6 +157,10 @@ return [
             // Custom rules (same structure as passing to the constructor)
             'rules' => [
                 'card_number' => new Sirix\Redaction\Rule\StartEndRule(6, 4),
+                Sirix\Redaction\Rule\Factory\SharedRuleFactory::regexKey(
+                    '/password|passwd|secret|token|api[_-]?key|authorization|cookie/i',
+                    Sirix\Redaction\Rule\Factory\SharedRuleFactory::fixedValue('[Filtered]'),
+                ),
             ],
 
             // Whether to load built‑in default rules (bool, default: true)
@@ -270,6 +283,34 @@ $redactor = new Redactor([
 ```
 
 Default rules and helper methods return fresh rule instances, avoiding static rule caches in long-running processes.
+
+### Regex key matcher performance guidance
+
+Regex key matchers are evaluated only when they are configured. Existing exact-key/default-rule setups keep the exact-map fast path and do not pay regex matching overhead.
+
+When matchers are configured, rule resolution is linear in the number of matchers for each scalar keyed value that does not match a custom exact rule first:
+
+```text
+scalar keyed values × configured key matchers
+```
+
+For best performance and predictable latency:
+
+- Prefer exact-key rules for known stable keys.
+- Keep the matcher list short; each additional matcher can add a `preg_match()` call per scalar key.
+- Combine related sensitive-key alternatives into one regex instead of several separate matchers:
+
+```php
+SharedRuleFactory::regexKey(
+    '/password|passwd|secret|token|api[_-]?key|authorization|cookie/i',
+    SharedRuleFactory::fixedValue('[Filtered]'),
+);
+```
+
+- Put highly specific exact custom rules in the string-keyed map; exact custom rules are checked before matchers.
+- Avoid broad or pathological regex patterns on very large payloads. Regex patterns are validated at matcher construction time, but expensive valid patterns can still affect runtime.
+- Use traversal limits (`max_depth`, `max_items_per_container`, `max_total_nodes`) for untrusted or very large inputs.
+- Benchmark representative payloads before adding many matchers to hot paths such as high-volume logging.
 
 If you need a custom masking strategy, implement `RedactionRuleInterface`. Rules receive a dedicated immutable `RedactionRuleContextInterface` snapshot with rule-level options (`replacement`, `template`, and `lengthLimit`) instead of the full redactor service:
 

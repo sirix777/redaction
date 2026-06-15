@@ -22,8 +22,12 @@ final class FullMaskRuleTest extends TestCase
     public function testFullMaskRule(): void
     {
         $fullMaskRule = new FullMaskRule();
-        $redactor = new Redactor(['secret' => $fullMaskRule], false);
-        $processed = $redactor->redact($this->convertNested(['secret' => 'my_secret_value']));
+        $redactor     = new Redactor([
+            'secret' => $fullMaskRule,
+        ], false);
+        $processed = $redactor->redact($this->convertNested([
+            'secret' => 'my_secret_value',
+        ]));
 
         $expected = str_repeat('*', strlen('my_secret_value'));
         $this->assertSame($expected, $processed['secret']);
@@ -32,11 +36,15 @@ final class FullMaskRuleTest extends TestCase
     public function testCustomReplacement(): void
     {
         $fullMaskRule = new FullMaskRule();
-        $redactor = (new Redactor(['secret' => $fullMaskRule], false))
+        $redactor     = (new Redactor([
+            'secret' => $fullMaskRule,
+        ], false))
             ->withReplacement('#')
         ;
 
-        $processed = $redactor->redact($this->convertNested(['secret' => 'my_secret_value']));
+        $processed = $redactor->redact($this->convertNested([
+            'secret' => 'my_secret_value',
+        ]));
 
         $expected = str_repeat('#', strlen('my_secret_value'));
         $this->assertSame($expected, $processed['secret']);

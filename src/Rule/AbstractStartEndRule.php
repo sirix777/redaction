@@ -36,9 +36,9 @@ class AbstractStartEndRule
         $limit = $redactionRuleContext->getLengthLimit();
 
         if ($length <= $this->visibleStart + $this->visibleEnd) {
-            $prefix = substr($value, 0, 1);
+            $prefix       = substr($value, 0, 1);
             $maxMaskBytes = null === $limit ? null : max(0, $limit - strlen($prefix));
-            $result = $prefix . $this->repeatMask($redactionRuleContext->getReplacement(), $length - 1, $maxMaskBytes);
+            $result       = $prefix . $this->repeatMask($redactionRuleContext->getReplacement(), $length - 1, $maxMaskBytes);
 
             if (null !== $limit) {
                 return substr($result, 0, $limit);
@@ -47,14 +47,14 @@ class AbstractStartEndRule
             return $result;
         }
 
-        $visibleStart = min($this->visibleStart, $length);
-        $visibleEnd = min($this->visibleEnd, $length - $visibleStart);
-        $hiddenLength = max(0, $length - $visibleStart - $visibleEnd);
-        $prefix = substr($value, 0, $visibleStart);
+        $visibleStart      = min($this->visibleStart, $length);
+        $visibleEnd        = min($this->visibleEnd, $length - $visibleStart);
+        $hiddenLength      = max(0, $length - $visibleStart - $visibleEnd);
+        $prefix            = substr($value, 0, $visibleStart);
         $isDefaultTemplate = self::DEFAULT_TEMPLATE === $redactionRuleContext->getTemplate();
-        $maxMaskBytes = null === $limit ? null : max(0, $limit - strlen($prefix));
+        $maxMaskBytes      = null === $limit ? null : max(0, $limit - strlen($prefix));
 
-        $hidden = $this->repeatMask($redactionRuleContext->getReplacement(), $hiddenLength, $maxMaskBytes);
+        $hidden      = $this->repeatMask($redactionRuleContext->getReplacement(), $hiddenLength, $maxMaskBytes);
         $placeholder = sprintf($redactionRuleContext->getTemplate(), $hidden);
 
         $result = $prefix . $placeholder;
@@ -81,7 +81,7 @@ class AbstractStartEndRule
         }
 
         $replacementLength = strlen($replacement);
-        $neededRepeats = min($repeatCount, intdiv($maxBytes + $replacementLength - 1, $replacementLength));
+        $neededRepeats     = min($repeatCount, intdiv($maxBytes + $replacementLength - 1, $replacementLength));
 
         return substr(str_repeat($replacement, $neededRepeats), 0, $maxBytes);
     }

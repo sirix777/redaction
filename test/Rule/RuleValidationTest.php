@@ -32,7 +32,9 @@ final class RuleValidationTest extends TestCase
             'secret' => new OffsetRule(-2),
         ], false);
 
-        $this->assertSame('****et', $redactor->redact(['secret' => 'secret'])['secret']);
+        $this->assertSame('****et', $redactor->redact([
+            'secret' => 'secret',
+        ])['secret']);
     }
 
     public function testTemplateRejectsWidthSpecifier(): void

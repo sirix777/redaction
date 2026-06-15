@@ -18,7 +18,9 @@ final class UnicodeStartEndRuleTest extends TestCase
             'secret' => new UnicodeStartEndRule(2, 2),
         ], false);
 
-        $result = $redactor->redact(['secret' => 'привет-мир']);
+        $result = $redactor->redact([
+            'secret' => 'привет-мир',
+        ]);
 
         $this->assertSame('пр******ир', $result['secret']);
     }
@@ -31,7 +33,9 @@ final class UnicodeStartEndRuleTest extends TestCase
             ->withLengthLimit(5)
         ;
 
-        $result = $redactor->redact(['secret' => 'привет-мир']);
+        $result = $redactor->redact([
+            'secret' => 'привет-мир',
+        ]);
 
         $this->assertSame('пр***', $result['secret']);
     }
@@ -45,7 +49,9 @@ final class UnicodeStartEndRuleTest extends TestCase
             ->withLengthLimit(3)
         ;
 
-        $result = $redactor->redact(['secret' => 'секрет']);
+        $result = $redactor->redact([
+            'secret' => 'секрет',
+        ]);
 
         $this->assertSame('🔒🔒🔒', $result['secret']);
     }
@@ -53,9 +59,13 @@ final class UnicodeStartEndRuleTest extends TestCase
     public function testSharedRuleFactoryCreatesUnicodeStartEndRule(): void
     {
         $redactionRule = SharedRuleFactory::unicodeStartEnd(1, 1);
-        $redactor = new Redactor(['secret' => $redactionRule], false);
+        $redactor      = new Redactor([
+            'secret' => $redactionRule,
+        ], false);
 
-        $this->assertSame('п****т', $redactor->redact(['secret' => 'привет'])['secret']);
+        $this->assertSame('п****т', $redactor->redact([
+            'secret' => 'привет',
+        ])['secret']);
     }
 
     public function testRejectsNegativeVisibleStart(): void
