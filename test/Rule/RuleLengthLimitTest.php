@@ -26,7 +26,9 @@ final class RuleLengthLimitTest extends TestCase
             ->withLengthLimit(5)
         ;
 
-        $result = $redactor->redact(['secret' => 'my_secret_value']);
+        $result = $redactor->redact([
+            'secret' => 'my_secret_value',
+        ]);
 
         $this->assertSame('my***', $result['secret']);
     }
@@ -39,7 +41,9 @@ final class RuleLengthLimitTest extends TestCase
             ->withLengthLimit(2)
         ;
 
-        $result = $redactor->redact(['secret' => 'abc']);
+        $result = $redactor->redact([
+            'secret' => 'abc',
+        ]);
 
         $this->assertSame('a*', $result['secret']);
         $this->assertSame(2, strlen($result['secret']));
@@ -53,7 +57,9 @@ final class RuleLengthLimitTest extends TestCase
             ->withLengthLimit(0)
         ;
 
-        $result = $redactor->redact(['secret' => 'abc']);
+        $result = $redactor->redact([
+            'secret' => 'abc',
+        ]);
 
         $this->assertSame('', $result['secret']);
     }
@@ -66,7 +72,9 @@ final class RuleLengthLimitTest extends TestCase
             ->withLengthLimit(5)
         ;
 
-        $result = $redactor->redact(['secret' => 'my_secret_value']);
+        $result = $redactor->redact([
+            'secret' => 'my_secret_value',
+        ]);
 
         $this->assertSame('my***', $result['secret']);
     }
@@ -79,7 +87,9 @@ final class RuleLengthLimitTest extends TestCase
             ->withLengthLimit(5)
         ;
 
-        $result = $redactor->redact(['secret' => 'my_secret_value']);
+        $result = $redactor->redact([
+            'secret' => 'my_secret_value',
+        ]);
 
         $this->assertSame('*****', $result['secret']);
     }
@@ -93,7 +103,9 @@ final class RuleLengthLimitTest extends TestCase
             ->withLengthLimit(5)
         ;
 
-        $result = $redactor->redact(['secret' => 'my_secret_value']);
+        $result = $redactor->redact([
+            'secret' => 'my_secret_value',
+        ]);
 
         $this->assertSame('#####', $result['secret']);
         $this->assertSame(5, strlen($result['secret']));
@@ -107,7 +119,9 @@ final class RuleLengthLimitTest extends TestCase
             ->withLengthLimit(10)
         ;
 
-        $result = $redactor->redact(['email' => 'john.doe@example.com']);
+        $result = $redactor->redact([
+            'email' => 'john.doe@example.com',
+        ]);
 
         $this->assertSame('joh****@ex', $result['email']);
     }
@@ -120,7 +134,9 @@ final class RuleLengthLimitTest extends TestCase
             ->withLengthLimit(8)
         ;
 
-        $result = $redactor->redact(['phone' => '1234567890']);
+        $result = $redactor->redact([
+            'phone' => '1234567890',
+        ]);
 
         $this->assertSame('1234****', $result['phone']);
     }
@@ -133,7 +149,9 @@ final class RuleLengthLimitTest extends TestCase
             ->withLengthLimit(5)
         ;
 
-        $result = $redactor->redact(['name' => 'Alexander']);
+        $result = $redactor->redact([
+            'name' => 'Alexander',
+        ]);
 
         $this->assertSame('Al***', $result['name']);
     }
@@ -146,7 +164,9 @@ final class RuleLengthLimitTest extends TestCase
             ->withLengthLimit(5)
         ;
 
-        $result = $redactor->redact(['secret' => 'привет-мир']);
+        $result = $redactor->redact([
+            'secret' => 'привет-мир',
+        ]);
 
         $this->assertSame('п***', $result['secret']);
         $this->assertSame(5, strlen($result['secret']));
@@ -156,14 +176,14 @@ final class RuleLengthLimitTest extends TestCase
     {
         $redactor = (new Redactor([
             'secret' => new StartEndRule(2, 2),
-            'email' => new EmailRule(),
+            'email'  => new EmailRule(),
         ], false))
             ->withLengthLimit(10)
         ;
 
         $result = $redactor->redact([
             'secret' => str_repeat('a', 100_000),
-            'email' => 'aaa@' . str_repeat('example', 100_000),
+            'email'  => 'aaa@' . str_repeat('example', 100_000),
         ]);
 
         $this->assertSame(10, strlen((string) $result['secret']));

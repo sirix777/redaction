@@ -25,8 +25,12 @@ final class RedactorProcessorScopeTest extends TestCase
             channel: 'test',
             level: Level::Info,
             message: 'password=secret',
-            context: ['password' => 'secret'],
-            extra: ['password' => 'secret'],
+            context: [
+                'password' => 'secret',
+            ],
+            extra: [
+                'password' => 'secret',
+            ],
         );
 
         $processed = $redactorProcessor($logRecord);

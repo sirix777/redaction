@@ -35,12 +35,12 @@ final class RedactorFactory
     public function __invoke(ContainerInterface $container): RedactorInterface
     {
         $containerResolver = ContainerResolver::forFactory($container, self::class);
-        $configReader = ConfigReader::fromContainer($containerResolver);
+        $configReader      = ConfigReader::fromContainer($containerResolver);
 
         $rules = $configReader->array('redactor.options.rules', []);
         $this->assertRules($rules);
 
-        $callback = $this->nullableCallable($configReader, 'redactor.options.on_limit_exceeded_callback');
+        $callback    = $this->nullableCallable($configReader, 'redactor.options.on_limit_exceeded_callback');
         $placeholder = $this->nullableString($configReader, 'redactor.options.overflow_placeholder', '...');
 
         $redactorOptions = new RedactorOptions(

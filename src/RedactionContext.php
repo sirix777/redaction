@@ -9,8 +9,8 @@ use SplObjectStorage;
 
 final class RedactionContext
 {
-    public int $currentDepth = 0;
-    public int $nodesVisited = 0;
+    public int $currentDepth            = 0;
+    public int $nodesVisited            = 0;
     public bool $totalNodeLimitExceeded = false;
 
     /**
@@ -18,10 +18,8 @@ final class RedactionContext
      */
     public ?SplObjectStorage $seenObjects;
 
-    private function __construct(
-        ObjectViewModeEnum $objectViewModeEnum,
-        public readonly RedactionRuleContextInterface $ruleContext,
-    ) {
+    private function __construct(ObjectViewModeEnum $objectViewModeEnum, public readonly RedactionRuleContextInterface $ruleContext)
+    {
         $this->seenObjects = ObjectViewModeEnum::Skip === $objectViewModeEnum
             ? null
             : new SplObjectStorage();

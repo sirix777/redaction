@@ -40,7 +40,7 @@ final class RedactorProcessorTest extends TestCase
     {
         $redactor = new Redactor([
             'password' => new OffsetRule(2),
-            'token' => new OffsetRule(4),
+            'token'    => new OffsetRule(4),
         ], false);
 
         $redactorProcessor = new RedactorProcessor($redactor);
@@ -49,7 +49,7 @@ final class RedactorProcessorTest extends TestCase
             'user' => [
                 'username' => 'bob',
                 'password' => 'secret123',
-                'token' => 'abcd1234',
+                'token'    => 'abcd1234',
             ],
         ]);
 
@@ -64,7 +64,7 @@ final class RedactorProcessorTest extends TestCase
     {
         $redactor = new Redactor([
             'password' => new OffsetRule(2),
-            'token' => new OffsetRule(4),
+            'token'    => new OffsetRule(4),
         ], false);
 
         $redactorProcessor = new RedactorProcessor($redactor);
@@ -73,7 +73,7 @@ final class RedactorProcessorTest extends TestCase
             'user' => [
                 'username' => 'bob',
                 'password' => 'secret123',
-                'token' => 'abcd1234',
+                'token'    => 'abcd1234',
             ],
         ]);
 
@@ -86,7 +86,7 @@ final class RedactorProcessorTest extends TestCase
 
     public function testProcessesObjectProperties(): void
     {
-        $user = new stdClass();
+        $user           = new stdClass();
         $user->username = 'carol';
         $user->password = 'mypass';
 
@@ -101,7 +101,9 @@ final class RedactorProcessorTest extends TestCase
 
         $redactorProcessor = new RedactorProcessor($redactor);
 
-        $logRecord = $this->createRecord(['user' => $user]);
+        $logRecord = $this->createRecord([
+            'user' => $user,
+        ]);
 
         $processed = $redactorProcessor($logRecord);
 
@@ -132,7 +134,7 @@ final class RedactorProcessorTest extends TestCase
 
     public function testHandlesNestedObjectsAndArrays(): void
     {
-        $nested = new stdClass();
+        $nested         = new stdClass();
         $nested->field1 = 'abcdef';
         $nested->field2 = '123456';
 
@@ -148,7 +150,9 @@ final class RedactorProcessorTest extends TestCase
 
         $redactorProcessor = new RedactorProcessor($redactor);
 
-        $logRecord = $this->createRecord(['nested' => $nested]);
+        $logRecord = $this->createRecord([
+            'nested' => $nested,
+        ]);
         $processed = $redactorProcessor($logRecord);
 
         $this->assertSame('ab****', $processed->context['nested']->field1);
@@ -163,7 +167,7 @@ final class RedactorProcessorTest extends TestCase
 
         $logRecord = $this->createRecord([
             'password' => 'mypassword',
-            'token' => 'abcd',
+            'token'    => 'abcd',
         ]);
 
         $processed = $redactorProcessor($logRecord);

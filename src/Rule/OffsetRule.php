@@ -26,14 +26,14 @@ final readonly class OffsetRule implements RedactionRuleInterface
             return $value;
         }
 
-        $limit = $redactionRuleContext->getLengthLimit();
+        $limit   = $redactionRuleContext->getLengthLimit();
         $visible = $this->offset >= 0
             ? substr($value, 0, $this->offset)
             : substr($value, $this->offset);
         $hiddenLength = max(0, $length - abs($this->offset));
         $maxMaskBytes = null === $limit ? null : max(0, $limit - strlen($visible));
-        $hidden = $this->repeatMask($redactionRuleContext->getReplacement(), $hiddenLength, $maxMaskBytes);
-        $placeholder = sprintf($redactionRuleContext->getTemplate(), $hidden);
+        $hidden       = $this->repeatMask($redactionRuleContext->getReplacement(), $hiddenLength, $maxMaskBytes);
+        $placeholder  = sprintf($redactionRuleContext->getTemplate(), $hidden);
 
         $result = $this->offset >= 0
             ? $visible . $placeholder
@@ -57,7 +57,7 @@ final readonly class OffsetRule implements RedactionRuleInterface
         }
 
         $replacementLength = strlen($replacement);
-        $neededRepeats = min($repeatCount, intdiv($maxBytes + $replacementLength - 1, $replacementLength));
+        $neededRepeats     = min($repeatCount, intdiv($maxBytes + $replacementLength - 1, $replacementLength));
 
         return substr(str_repeat($replacement, $neededRepeats), 0, $maxBytes);
     }

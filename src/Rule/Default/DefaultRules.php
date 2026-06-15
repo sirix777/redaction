@@ -27,12 +27,12 @@ final class DefaultRules
     {
         $rules = [
             'cardNumber' => SharedRuleFactory::startEnd(6, 4),
-            'fullMask' => SharedRuleFactory::fullMask(),
-            'fixedStar' => SharedRuleFactory::fixedValue('*'),
-            'null' => SharedRuleFactory::null(),
-            'name' => SharedRuleFactory::name(),
-            'phone' => SharedRuleFactory::phone(),
-            'email' => SharedRuleFactory::email(),
+            'fullMask'   => SharedRuleFactory::fullMask(),
+            'fixedStar'  => SharedRuleFactory::fixedValue('*'),
+            'null'       => SharedRuleFactory::null(),
+            'name'       => SharedRuleFactory::name(),
+            'phone'      => SharedRuleFactory::phone(),
+            'email'      => SharedRuleFactory::email(),
             'expiryDate' => SharedRuleFactory::fixedValue('**/****'),
         ];
         $groups = self::getGroups();
@@ -67,7 +67,7 @@ final class DefaultRules
             ],
 
             // CVV / security
-            'fullMask' => [
+            'fullMask'   => [
                 'security_code',
                 'cvv',
                 'securitycode',
@@ -90,7 +90,7 @@ final class DefaultRules
             ],
 
             // Sensitive / authentication data
-            'fixedStar' => [
+            'fixedStar'  => [
                 'cavv',
                 'threeddirectorytransactionreference',
                 'authenticationValue',
@@ -121,7 +121,7 @@ final class DefaultRules
             ],
 
             // Completely redact (null)
-            'null' => [
+            'null'       => [
                 'pay_form_3d',
                 'PaRes',
                 'pares',
@@ -134,7 +134,7 @@ final class DefaultRules
             ],
 
             // Names
-            'name' => [
+            'name'       => [
                 'card_holder',
                 'holder',
                 'name',
@@ -151,13 +151,13 @@ final class DefaultRules
             ],
 
             // Phones
-            'phone' => [
+            'phone'      => [
                 'phone',
                 'MobilePhone',
             ],
 
             // Emails
-            'email' => [
+            'email'      => [
                 'email',
                 'client_email',
                 'customeremail',

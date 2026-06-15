@@ -38,7 +38,7 @@ final class DefaultRulesTest extends TestCase
 
     public function testDefaultRulesReturnFreshRuleInstances(): void
     {
-        $first = DefaultRules::getAll();
+        $first  = DefaultRules::getAll();
         $second = DefaultRules::getAll();
 
         $this->assertEquals($first, $second);
@@ -50,13 +50,13 @@ final class DefaultRulesTest extends TestCase
         $redactor = new Redactor();
 
         $result = $redactor->redact([
-            'password' => 'secret',
+            'password'    => 'secret',
             'card_number' => '4111111111111111',
-            'cvv' => '123',
-            'expirydate' => '12/2030',
-            'email' => 'john.doe@example.com',
-            'phone' => '1234567890',
-            'name' => 'John',
+            'cvv'         => '123',
+            'expirydate'  => '12/2030',
+            'email'       => 'john.doe@example.com',
+            'phone'       => '1234567890',
+            'name'        => 'John',
         ]);
 
         $this->assertSame('*', $result['password']);
@@ -74,7 +74,7 @@ final class DefaultRulesTest extends TestCase
 
         $payload = [
             'password' => 'secret',
-            'email' => 'john.doe@example.com',
+            'email'    => 'john.doe@example.com',
         ];
 
         $this->assertSame($payload, $redactor->redact($payload));

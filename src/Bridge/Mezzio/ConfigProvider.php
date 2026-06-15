@@ -26,7 +26,7 @@ class ConfigProvider
     public function getDependencies(): array
     {
         return [
-            'aliases' => [
+            'aliases'   => [
                 RedactorInterface::class => Redactor::class,
             ],
             'factories' => [

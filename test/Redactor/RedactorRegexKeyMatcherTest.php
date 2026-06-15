@@ -26,30 +26,30 @@ final class RedactorRegexKeyMatcherTest extends TestCase
 
         $result = $redactor->redact([
             'user' => [
-                'accessToken' => 'access-token',
+                'accessToken'   => 'access-token',
                 'refresh_token' => 'refresh-token',
-                'api-key' => 'api-key-value',
-                'clientSecret' => 'secret-value',
-                'name' => 'Alice',
+                'api-key'       => 'api-key-value',
+                'clientSecret'  => 'secret-value',
+                'name'          => 'Alice',
             ],
         ]);
 
         $this->assertSame([
             'user' => [
-                'accessToken' => '[Filtered]',
+                'accessToken'   => '[Filtered]',
                 'refresh_token' => '[Filtered]',
-                'api-key' => '[Filtered]',
-                'clientSecret' => '[Filtered]',
-                'name' => 'Alice',
+                'api-key'       => '[Filtered]',
+                'clientSecret'  => '[Filtered]',
+                'name'          => 'Alice',
             ],
         ], $result);
     }
 
     public function testRegexMatcherMasksObjectPropertiesInCopyMode(): void
     {
-        $user = new stdClass();
+        $user                      = new stdClass();
         $user->authorizationHeader = 'Bearer token';
-        $user->username = 'alice';
+        $user->username            = 'alice';
 
         $redactor = (new Redactor([
             SharedRuleFactory::regexKey('/authorization/i', SharedRuleFactory::fixedValue('[Filtered]')),
@@ -73,7 +73,7 @@ final class RedactorRegexKeyMatcherTest extends TestCase
         ], false);
 
         $result = $redactor->redact([
-            'accessToken' => 'access-token',
+            'accessToken'  => 'access-token',
             'refreshToken' => 'refresh-token',
         ]);
 
@@ -123,7 +123,9 @@ final class RedactorRegexKeyMatcherTest extends TestCase
             ],
         ]);
 
-        $this->assertSame(['user' => '[DEPTH]'], $result);
+        $this->assertSame([
+            'user' => '[DEPTH]',
+        ], $result);
     }
 
     public function testRuleExceptionFromRegexMatcherFailsClosed(): void

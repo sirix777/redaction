@@ -47,14 +47,14 @@ final readonly class UnicodeStartEndRule implements RedactionRuleInterface
                 );
         }
 
-        $visibleStart = min($this->visibleStart, $length);
-        $visibleEnd = min($this->visibleEnd, $length - $visibleStart);
-        $hiddenLength = max(0, $length - $visibleStart - $visibleEnd);
-        $prefix = $this->substring($value, 0, $visibleStart);
-        $limit = $redactionRuleContext->getLengthLimit();
+        $visibleStart      = min($this->visibleStart, $length);
+        $visibleEnd        = min($this->visibleEnd, $length - $visibleStart);
+        $hiddenLength      = max(0, $length - $visibleStart - $visibleEnd);
+        $prefix            = $this->substring($value, 0, $visibleStart);
+        $limit             = $redactionRuleContext->getLengthLimit();
         $maxMaskCharacters = null === $limit ? null : max(0, $limit - $this->length($prefix));
-        $hidden = $this->repeatMask($redactionRuleContext->getReplacement(), $hiddenLength, $maxMaskCharacters);
-        $placeholder = sprintf($redactionRuleContext->getTemplate(), $hidden);
+        $hidden            = $this->repeatMask($redactionRuleContext->getReplacement(), $hiddenLength, $maxMaskCharacters);
+        $placeholder       = sprintf($redactionRuleContext->getTemplate(), $hidden);
 
         $result = $prefix . $placeholder;
 
@@ -122,7 +122,7 @@ final readonly class UnicodeStartEndRule implements RedactionRuleInterface
         }
 
         $replacementLength = $this->length($replacement);
-        $neededRepeats = min($repeatCount, intdiv($maxCharacters + $replacementLength - 1, $replacementLength));
+        $neededRepeats     = min($repeatCount, intdiv($maxCharacters + $replacementLength - 1, $replacementLength));
 
         return $this->truncate(str_repeat($replacement, $neededRepeats), $maxCharacters);
     }

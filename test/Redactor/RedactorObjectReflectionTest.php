@@ -19,7 +19,7 @@ final class RedactorObjectReflectionTest extends TestCase
 {
     public function testClonedObjectIsProcessedAndOriginalUnchangedWithTopLevelRules(): void
     {
-        $user = new stdClass();
+        $user           = new stdClass();
         $user->username = 'carol';
         $user->password = 'mypass';
 
@@ -32,7 +32,9 @@ final class RedactorObjectReflectionTest extends TestCase
             ->withObjectViewMode(ObjectViewModeEnum::Copy)
         ;
 
-        $result = $redactor->redact(['user' => $user]);
+        $result = $redactor->redact([
+            'user' => $user,
+        ]);
 
         /** @var stdClass $resultUser */
         $resultUser = $result['user'];
@@ -47,7 +49,7 @@ final class RedactorObjectReflectionTest extends TestCase
 
     public function testClonedObjectIsProcessedWithNestedRules(): void
     {
-        $user = new stdClass();
+        $user           = new stdClass();
         $user->username = 'dave';
         $user->password = 'secr3t';
 
@@ -60,7 +62,9 @@ final class RedactorObjectReflectionTest extends TestCase
             ->withObjectViewMode(ObjectViewModeEnum::Copy)
         ;
 
-        $result = $redactor->redact(['user' => $user]);
+        $result = $redactor->redact([
+            'user' => $user,
+        ]);
 
         /** @var stdClass $resultUser */
         $resultUser = $result['user'];
@@ -72,7 +76,7 @@ final class RedactorObjectReflectionTest extends TestCase
 
     public function testEmptyNonTraversableObjectsCompatibilityFlag(): void
     {
-        $obj = new stdClass();
+        $obj         = new stdClass();
         $obj->secret = 'topsecret';
 
         $redactor = (new Redactor([
@@ -81,7 +85,9 @@ final class RedactorObjectReflectionTest extends TestCase
             ->withObjectViewMode(ObjectViewModeEnum::Copy)
         ;
 
-        $result = $redactor->redact(['obj' => $obj]);
+        $result = $redactor->redact([
+            'obj' => $obj,
+        ]);
 
         /** @var stdClass $resultObj */
         $resultObj = $result['obj'];
@@ -109,12 +115,14 @@ final class RedactorObjectReflectionTest extends TestCase
 
         $redactor = (new Redactor([
             'password' => new OffsetRule(4),
-            'token' => new OffsetRule(3),
+            'token'    => new OffsetRule(3),
         ], false))
             ->withObjectViewMode(ObjectViewModeEnum::Copy)
         ;
 
-        $result = $redactor->redact(['user' => $user]);
+        $result = $redactor->redact([
+            'user' => $user,
+        ]);
 
         /** @var stdClass $processed */
         $processed = $result['user'];
@@ -128,7 +136,7 @@ final class RedactorObjectReflectionTest extends TestCase
 
     public function testCopyModeAlwaysReturnsPlainObjectCopy(): void
     {
-        $user = new stdClass();
+        $user       = new stdClass();
         $user->name = 'public';
 
         $redactor = (new Redactor([], false))
@@ -160,20 +168,22 @@ final class RedactorObjectReflectionTest extends TestCase
 
         $redactor = (new Redactor([
             'password' => new OffsetRule(3),
-            'token' => new OffsetRule(3),
+            'token'    => new OffsetRule(3),
         ], false))
             ->withObjectViewMode(ObjectViewModeEnum::PublicArray)
         ;
 
         $result = $redactor->redact($user);
 
-        $this->assertSame(['password' => 'pub*******'], $result);
+        $this->assertSame([
+            'password' => 'pub*******',
+        ], $result);
         $this->assertSame('privpass', $user->getToken());
     }
 
     public function testSkipModeDoesNotTraverseObjectProperties(): void
     {
-        $user = new stdClass();
+        $user           = new stdClass();
         $user->password = 'secret';
 
         $redactor = new Redactor([

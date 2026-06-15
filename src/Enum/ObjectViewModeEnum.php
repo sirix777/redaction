@@ -6,7 +6,7 @@ namespace Sirix\Redaction\Enum;
 
 enum ObjectViewModeEnum: string
 {
-    case Copy = 'copy';
+    case Copy        = 'copy';
     case PublicArray = 'public_array';
-    case Skip = 'skip';
+    case Skip        = 'skip';
 }

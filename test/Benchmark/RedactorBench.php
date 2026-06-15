@@ -129,21 +129,21 @@ final class RedactorBench
     public function setUpLargeArray(): void
     {
         $records = [];
-        $count = 2000;
+        $count   = 2000;
         for ($i = 0; $i < $count; ++$i) {
             $records[] = [
-                'id' => $i,
-                'name' => 'John Doe',
-                'email' => 'user' . $i . '@example.com',
+                'id'       => $i,
+                'name'     => 'John Doe',
+                'email'    => 'user' . $i . '@example.com',
                 'password' => 'p@ssw0rd' . $i,
-                'address' => '221B Baker Street',
+                'address'  => '221B Baker Street',
             ];
         }
 
-        $this->largeArray = $records;
-        $this->defaultRedactor = new Redactor();
+        $this->largeArray                   = $records;
+        $this->defaultRedactor              = new Redactor();
         $this->largeArrayItemsLimitRedactor = (new Redactor())->withMaxItemsPerContainer(10);
-        $this->largeArrayNodeLimitRedactor = (new Redactor())->withMaxTotalNodes(50);
+        $this->largeArrayNodeLimitRedactor  = (new Redactor())->withMaxTotalNodes(50);
     }
 
     public function setUpNoRedactionPayload(): void
@@ -151,32 +151,34 @@ final class RedactorBench
         $records = [];
         for ($i = 0; $i < 2000; ++$i) {
             $records[] = [
-                'id' => $i,
-                'status' => 'ok',
+                'id'       => $i,
+                'status'   => 'ok',
                 'metadata' => [
-                    'source' => 'benchmark',
+                    'source'   => 'benchmark',
                     'sequence' => $i,
                 ],
             ];
         }
 
-        $this->noRedactionPayload = $records;
+        $this->noRedactionPayload  = $records;
         $this->noRedactionRedactor = new Redactor([], false);
     }
 
     public function setUpDeepNesting(): void
     {
         $depth = 40;
-        $data = ['meta' => 'ok'];
+        $data  = [
+            'meta' => 'ok',
+        ];
         $cur = &$data;
         for ($i = 0; $i < $depth; ++$i) {
             $cur['level'] = $i;
             $cur['child'] = [];
-            $cur = &$cur['child'];
+            $cur          = &$cur['child'];
         }
         unset($cur);
 
-        $this->deepData = $data;
+        $this->deepData     = $data;
         $this->deepRedactor = (new Redactor())
             ->withMaxDepth(20)
             ->withOverflowPlaceholder('...')
@@ -186,16 +188,16 @@ final class RedactorBench
     public function setUpSmallPayload(): void
     {
         $this->smallPayload = [
-            'email' => 'john.doe@example.com',
+            'email'    => 'john.doe@example.com',
             'password' => 'secret-password',
-            'nested' => [
+            'nested'   => [
                 'token' => 'abcdef123456',
             ],
         ];
 
         $this->smallPayloadRedactor = new Redactor([
             'password' => new OffsetRule(2),
-            'token' => new OffsetRule(4),
+            'token'    => new OffsetRule(4),
         ]);
     }
 
@@ -216,7 +218,7 @@ final class RedactorBench
 
     public function setUpLargeObjectGraph(): void
     {
-        $n = 300;
+        $n       = 300;
         $objects = [];
         for ($i = 0; $i < $n; ++$i) {
             $objects[] = new User(
@@ -229,7 +231,7 @@ final class RedactorBench
 
         $rules = [
             'password' => new OffsetRule(2),
-            'token' => new OffsetRule(3),
+            'token'    => new OffsetRule(3),
         ];
 
         $this->objectCopyRedactor = (new Redactor($rules, false))

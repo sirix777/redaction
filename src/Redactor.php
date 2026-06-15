@@ -57,12 +57,9 @@ final class Redactor implements RedactorInterface
      *
      * @param array<array-key, mixed> $customRules
      */
-    public function __construct(
-        array $customRules = [],
-        bool $useDefaultRules = true,
-        ?RedactorOptions $redactorOptions = null
-    ) {
-        $this->redactorOptions = $redactorOptions ?? new RedactorOptions();
+    public function __construct(array $customRules = [], bool $useDefaultRules = true, ?RedactorOptions $redactorOptions = null)
+    {
+        $this->redactorOptions   = $redactorOptions ?? new RedactorOptions();
         $this->defaultExactRules = $useDefaultRules ? $this->loadDefaultRules() : [];
         foreach ($customRules as $key => $rule) {
             if (is_string($key) && $rule instanceof RedactionRuleInterface) {
@@ -187,7 +184,7 @@ final class Redactor implements RedactorInterface
 
     private function withOptions(RedactorOptions $redactorOptions): self
     {
-        $clone = clone $this;
+        $clone                  = clone $this;
         $clone->redactorOptions = $redactorOptions;
 
         return $clone;
@@ -197,7 +194,9 @@ final class Redactor implements RedactorInterface
     {
         if (is_array($value)) {
             if (! $this->enterDepth($redactionContext)) {
-                $this->onLimit('maxDepth', ['kind' => 'array'], $redactionContext);
+                $this->onLimit('maxDepth', [
+                    'kind' => 'array',
+                ], $redactionContext);
 
                 return $this->overflowValue();
             }
@@ -229,7 +228,7 @@ final class Redactor implements RedactorInterface
     private function processContainerCopy(array $array, RedactionContext $redactionContext): array
     {
         $result = null;
-        $count = 0;
+        $count  = 0;
 
         foreach ($array as $key => $item) {
             if (
@@ -298,7 +297,9 @@ final class Redactor implements RedactorInterface
     private function shouldSkipObject(object $object, RedactionContext $redactionContext): bool
     {
         if ($redactionContext->seenObjects?->offsetExists($object)) {
-            $this->onLimit('cycle', ['class' => get_debug_type($object)], $redactionContext);
+            $this->onLimit('cycle', [
+                'class' => get_debug_type($object),
+            ], $redactionContext);
 
             return true;
         }
@@ -307,7 +308,7 @@ final class Redactor implements RedactorInterface
             $this->onLimit(
                 'maxDepth',
                 [
-                    'kind' => 'object',
+                    'kind'  => 'object',
                     'class' => get_debug_type($object),
                 ],
                 $redactionContext
@@ -334,34 +335,23 @@ final class Redactor implements RedactorInterface
     /**
      * @return array{0: array<string, mixed>, 1: bool, 2: bool}
      */
-    private function processObjectPropertiesCopy(
-        object $object,
-        RedactionContext $redactionContext,
-        bool $includeNonPublic,
-    ): array {
-        $result = [];
-        $changed = false;
+    private function processObjectPropertiesCopy(object $object, RedactionContext $redactionContext, bool $includeNonPublic): array
+    {
+        $result    = [];
+        $changed   = false;
         $truncated = false;
-        $count = 0;
+        $count     = 0;
 
         $publicProperties = get_object_vars($object);
+        $publicCount      = count($publicProperties);
         foreach ($publicProperties as $name => $value) {
-            if (
-                $redactionContext->totalNodeLimitExceeded
-                || $this->hitContainerItemLimit($count, $name, $redactionContext)
-            ) {
-                $this->appendObjectOverflowPlaceholder($result);
+            if (! $this->processObjectPropertyEntryCopy($name, $value, $count, $result, $changed, $redactionContext)) {
                 $truncated = true;
 
                 break;
             }
 
-            $processed = $this->processObjectPropertyValue($name, $value, $redactionContext);
-            $changed = $changed || $processed !== $value;
-            $result[$name] = $processed;
-            ++$count;
-
-            if ($this->hasExceededTotalNodeLimit($redactionContext) && $count < count($publicProperties)) {
+            if ($this->hasExceededTotalNodeLimit($redactionContext) && $count < $publicCount) {
                 $this->appendObjectOverflowPlaceholder($result);
                 $truncated = true;
 
@@ -387,23 +377,14 @@ final class Redactor implements RedactorInterface
                 continue;
             }
 
-            $name = $reflectionProperty->getName();
+            $name  = $reflectionProperty->getName();
             $value = $reflectionProperty->getValue($object);
 
-            if (
-                $redactionContext->totalNodeLimitExceeded
-                || $this->hitContainerItemLimit($count, $name, $redactionContext)
-            ) {
-                $this->appendObjectOverflowPlaceholder($result);
+            if (! $this->processObjectPropertyEntryCopy($name, $value, $count, $result, $changed, $redactionContext)) {
                 $truncated = true;
 
                 break;
             }
-
-            $processed = $this->processObjectPropertyValue($name, $value, $redactionContext);
-            $changed = $changed || $processed !== $value;
-            $result[$name] = $processed;
-            ++$count;
 
             if ($this->hasExceededTotalNodeLimit($redactionContext)) {
                 $this->appendObjectOverflowPlaceholder($result);
@@ -414,6 +395,34 @@ final class Redactor implements RedactorInterface
         }
 
         return [$result, $changed, $truncated];
+    }
+
+    /**
+     * @param array<string, mixed> $result
+     */
+    private function processObjectPropertyEntryCopy(
+        string $name,
+        mixed $value,
+        int &$count,
+        array &$result,
+        bool &$changed,
+        RedactionContext $redactionContext,
+    ): bool {
+        if (
+            $redactionContext->totalNodeLimitExceeded
+            || $this->hitContainerItemLimit($count, $name, $redactionContext)
+        ) {
+            $this->appendObjectOverflowPlaceholder($result);
+
+            return false;
+        }
+
+        $processed     = $this->processObjectPropertyValue($name, $value, $redactionContext);
+        $changed       = $changed || $processed !== $value;
+        $result[$name] = $processed;
+        ++$count;
+
+        return true;
     }
 
     private function processObjectPropertyValue(string $key, mixed $value, RedactionContext $redactionContext): mixed
@@ -431,46 +440,12 @@ final class Redactor implements RedactorInterface
             return $this->overflowValue();
         }
 
-        if (is_scalar($item)) {
-            if ([] === $this->customRuleMatchers) {
-                if (isset($this->exactRules[$key])) {
-                    return $this->applyRule($key, $item, $this->exactRules[$key], $redactionContext);
-                }
-            } else {
-                $rule = $this->resolveRule($key);
-                if ($rule instanceof RedactionRuleInterface) {
-                    return $this->applyRule($key, $item, $rule, $redactionContext);
-                }
-            }
-        }
-
-        if (is_array($item) || (is_object($item) && $this->shouldProcessObject($item))) {
-            return $this->processValueCopy($item, $redactionContext);
-        }
-
-        return $item;
+        return $this->processKeyedValueCopy($key, $item, $redactionContext);
     }
 
     private function maskValueCopy(string $key, mixed $value, RedactionContext $redactionContext): mixed
     {
-        if (is_scalar($value)) {
-            if ([] === $this->customRuleMatchers) {
-                if (isset($this->exactRules[$key])) {
-                    return $this->applyRule($key, $value, $this->exactRules[$key], $redactionContext);
-                }
-            } else {
-                $rule = $this->resolveRule($key);
-                if ($rule instanceof RedactionRuleInterface) {
-                    return $this->applyRule($key, $value, $rule, $redactionContext);
-                }
-            }
-        }
-
-        if (is_array($value) || (is_object($value) && $this->shouldProcessObject($value))) {
-            return $this->processValueCopy($value, $redactionContext);
-        }
-
-        return $value;
+        return $this->processKeyedValueCopy($key, $value, $redactionContext);
     }
 
     private function resolveRule(int|string $key): ?RedactionRuleInterface
@@ -496,16 +471,15 @@ final class Redactor implements RedactorInterface
         return $this->defaultExactRules[$key] ?? null;
     }
 
-    private function applyRule(
-        int|string $key,
-        mixed $value,
-        RedactionRuleInterface $redactionRule,
-        RedactionContext $redactionContext,
-    ): ?string {
+    private function applyRule(int|string $key, mixed $value, RedactionRuleInterface $redactionRule, RedactionContext $redactionContext): ?string
+    {
         try {
             return $redactionRule->apply((string) $value, $redactionContext->ruleContext);
         } catch (Throwable $exception) {
-            $this->onLimit('ruleException', ['key' => $key, 'exception' => $exception::class], $redactionContext);
+            $this->onLimit('ruleException', [
+                'key'       => $key,
+                'exception' => $exception::class,
+            ], $redactionContext);
 
             return $this->overflowValue();
         }
@@ -542,7 +516,9 @@ final class Redactor implements RedactorInterface
             null !== $this->redactorOptions->maxItemsPerContainer
             && $count >= $this->redactorOptions->maxItemsPerContainer
         ) {
-            $this->onLimit('maxItemsPerContainer', ['key' => $key], $redactionContext);
+            $this->onLimit('maxItemsPerContainer', [
+                'key' => $key,
+            ], $redactionContext);
 
             return true;
         }
@@ -558,7 +534,10 @@ final class Redactor implements RedactorInterface
 
         if (++$redactionContext->nodesVisited > ($this->redactorOptions->maxTotalNodes ?? PHP_INT_MAX)) {
             $redactionContext->totalNodeLimitExceeded = true;
-            $this->onLimit('maxTotalNodes', ['kind' => $kind, 'key' => $key], $redactionContext);
+            $this->onLimit('maxTotalNodes', [
+                'kind' => $kind,
+                'key'  => $key,
+            ], $redactionContext);
 
             return true;
         }
@@ -576,8 +555,8 @@ final class Redactor implements RedactorInterface
             try {
                 $callback([
                     ...$info,
-                    'type' => $type,
-                    'depth' => $redactionContext->currentDepth,
+                    'type'         => $type,
+                    'depth'        => $redactionContext->currentDepth,
                     'nodesVisited' => $redactionContext->nodesVisited,
                 ]);
             } catch (Throwable) {
@@ -635,5 +614,27 @@ final class Redactor implements RedactorInterface
     private function loadDefaultRules(): array
     {
         return DefaultRules::getAll();
+    }
+
+    private function processKeyedValueCopy(int|string $key, mixed $value, RedactionContext $redactionContext): mixed
+    {
+        if (is_scalar($value)) {
+            if ([] === $this->customRuleMatchers) {
+                if (isset($this->exactRules[$key])) {
+                    return $this->applyRule($key, $value, $this->exactRules[$key], $redactionContext);
+                }
+            } else {
+                $rule = $this->resolveRule($key);
+                if ($rule instanceof RedactionRuleInterface) {
+                    return $this->applyRule($key, $value, $rule, $redactionContext);
+                }
+            }
+        }
+
+        if (is_array($value) || (is_object($value) && $this->shouldProcessObject($value))) {
+            return $this->processValueCopy($value, $redactionContext);
+        }
+
+        return $value;
     }
 }

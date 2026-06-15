@@ -30,20 +30,24 @@ final class RedactorOptionsTest extends TestCase
         $this->assertSame('#', $redactor->getReplacement());
         $this->assertSame(5, $redactor->getLengthLimit());
         $this->assertSame(ObjectViewModeEnum::Copy, $redactor->getObjectViewMode());
-        $this->assertSame('se###', $redactor->redact(['password' => 'secret'])['password']);
+        $this->assertSame('se###', $redactor->redact([
+            'password' => 'secret',
+        ])['password']);
     }
 
     public function testRejectsInvalidConstructorRule(): void
     {
         $this->expectException(InvalidArgumentException::class);
 
-        new Redactor(['password' => 'not-a-rule']);
+        new Redactor([
+            'password' => 'not-a-rule',
+        ]);
     }
 
     public function testWithersReturnNewOptionsInstance(): void
     {
         $redactorOptions = new RedactorOptions();
-        $changed = $redactorOptions->withMaxDepth(2);
+        $changed         = $redactorOptions->withMaxDepth(2);
 
         $this->assertNull($redactorOptions->maxDepth);
         $this->assertSame(2, $changed->maxDepth);

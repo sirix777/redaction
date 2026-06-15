@@ -17,7 +17,7 @@ final class FullMaskRule implements RedactionRuleInterface
     public function apply(string $value, RedactionRuleContextInterface $redactionRuleContext): string
     {
         $length = strlen($value);
-        $limit = $redactionRuleContext->getLengthLimit();
+        $limit  = $redactionRuleContext->getLengthLimit();
 
         return $this->repeatMask($redactionRuleContext->getReplacement(), $length, $limit);
     }
@@ -33,7 +33,7 @@ final class FullMaskRule implements RedactionRuleInterface
         }
 
         $replacementLength = strlen($replacement);
-        $neededRepeats = min($repeatCount, intdiv($maxBytes + $replacementLength - 1, $replacementLength));
+        $neededRepeats     = min($repeatCount, intdiv($maxBytes + $replacementLength - 1, $replacementLength));
 
         return substr(str_repeat($replacement, $neededRepeats), 0, $maxBytes);
     }

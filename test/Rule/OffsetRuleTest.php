@@ -17,8 +17,13 @@ final class OffsetRuleTest extends TestCase
     public function testSimpleOffsetRule(): void
     {
         $offsetRule = new OffsetRule(3);
-        $redactor = new Redactor(['password' => $offsetRule], false);
-        $processed = $redactor->redact($this->convertNested(['username' => 'alice', 'password' => 'secret123']));
+        $redactor   = new Redactor([
+            'password' => $offsetRule,
+        ], false);
+        $processed = $redactor->redact($this->convertNested([
+            'username' => 'alice',
+            'password' => 'secret123',
+        ]));
 
         $this->assertSame('sec******', $processed['password']);
         $this->assertSame('alice', $processed['username']); // Unaffected field
@@ -29,7 +34,7 @@ final class OffsetRuleTest extends TestCase
         $redactor = (new Redactor(
             [
                 'password' => new OffsetRule(2),
-                'token' => new OffsetRule(4),
+                'token'    => new OffsetRule(4),
             ],
             false
         ))
@@ -40,7 +45,7 @@ final class OffsetRuleTest extends TestCase
             'user' => [
                 'username' => 'bob',
                 'password' => 'secret123',
-                'token' => 'abcd1234',
+                'token'    => 'abcd1234',
             ],
         ]));
 
@@ -52,8 +57,12 @@ final class OffsetRuleTest extends TestCase
     public function testNegativeOffset(): void
     {
         $offsetRule = new OffsetRule(-2);
-        $redactor = new Redactor(['password' => $offsetRule], false);
-        $processed = $redactor->redact($this->convertNested(['password' => 'secret123']));
+        $redactor   = new Redactor([
+            'password' => $offsetRule,
+        ], false);
+        $processed = $redactor->redact($this->convertNested([
+            'password' => 'secret123',
+        ]));
 
         $this->assertSame('*******23', $processed['password']);
     }
