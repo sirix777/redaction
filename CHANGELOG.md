@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1] - 2026-08-10
+### Changed
+- Updated the runtime dependency `sirix/container-resolver` from 0.1.2 to 0.2.0.
+
 ## [2.1.0] - 2026-06-15
 ### Added
 - Added key matcher support for custom rules via `Sirix\Redaction\Rule\Matcher\KeyRuleMatcherInterface`.
@@ -105,4 +109,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Monolog bridge: `Sirix\Redaction\Bridge\Monolog\RedactorProcessor` for seamless log redaction (optional; requires `monolog/monolog` ^3.0).
 - PHP 8.1–8.4 support.
 - PHPUnit test suite and QA tooling (PHPStan, PHP-CS-Fixer, Rector).
-
