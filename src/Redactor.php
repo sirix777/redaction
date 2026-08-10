@@ -43,7 +43,7 @@ final class Redactor implements RedactorInterface
     /**
      * @var array<string, RedactionRuleInterface>
      */
-    private array $defaultExactRules = [];
+    private array $defaultExactRules;
 
     /**
      * @var array<string, RedactionRuleInterface>
