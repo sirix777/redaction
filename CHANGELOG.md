@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.1.1] - 2026-08-10
 ### Changed
 - Updated the runtime dependency `sirix/container-resolver` from 0.1.2 to 0.2.0.
+- Removed the redundant default value from `Redactor::$defaultExactRules`; it is always initialized in the constructor.
 
 ## [2.1.0] - 2026-06-15
 ### Added

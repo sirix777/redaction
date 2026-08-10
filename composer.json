@@ -32,7 +32,7 @@
     "bamarni/composer-bin-plugin": "^1.9.1",
     "monolog/monolog": "^3.10",
     "phpbench/phpbench": "^1.7.0",
-    "phpunit/phpunit": "^11.5.55"
+    "phpunit/phpunit": "^11.5.56"
   },
   "suggest": {
     "ext-intl": "Install to use UnicodeStartEndRule for grapheme-aware masking.",
