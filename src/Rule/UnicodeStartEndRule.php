@@ -20,7 +20,7 @@ use function str_repeat;
 
 final readonly class UnicodeStartEndRule implements RedactionRuleInterface
 {
-    private const DEFAULT_TEMPLATE = '%s';
+    private const string DEFAULT_TEMPLATE = '%s';
 
     public function __construct(private int $visibleStart, private int $visibleEnd)
     {

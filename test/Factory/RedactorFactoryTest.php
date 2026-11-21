@@ -386,8 +386,8 @@ final class RedactorFactoryTest extends TestCase
 
     private function containerWithConfig(mixed $config): ContainerInterface
     {
-        return new class($config) implements ContainerInterface {
-            public function __construct(private readonly mixed $config) {}
+        return new readonly class($config) implements ContainerInterface {
+            public function __construct(private mixed $config) {}
 
             public function get(string $id): mixed
             {

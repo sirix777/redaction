@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-11-21
+### Changed
+- Added PHP 8.6 support and dropped PHP 8.2: the supported window is now PHP 8.3-8.6 (`~8.3.0 || ~8.4.0 || ~8.5.0 || ~8.6.0`). CI runs the full window; rector and php-cs-fixer target PHP 8.3.
+- Development dependency `phpunit/phpunit` is now `^12.5` (it requires PHP 8.3+).
+
 ## [2.1.2] - 2026-08-13
 ### Changed
 - Updated the runtime dependency `sirix/container-resolver` from ^0.2 to ^1.0.

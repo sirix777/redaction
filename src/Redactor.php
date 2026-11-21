@@ -28,7 +28,7 @@ use function sprintf;
 
 final class Redactor implements RedactorInterface
 {
-    private const OVERFLOW_KEY = '__redaction_overflow__';
+    private const string OVERFLOW_KEY = '__redaction_overflow__';
 
     /**
      * @var array<string, RedactionRuleInterface>
