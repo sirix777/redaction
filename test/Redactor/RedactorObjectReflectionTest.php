@@ -99,8 +99,8 @@ final class RedactorObjectReflectionTest extends TestCase
 
     public function testPrivatePropertiesAreProcessedViaReflection(): void
     {
-        $user = new class('privpass', 'tok123') {
-            public function __construct(private readonly string $password, private readonly string $token) {}
+        $user = new readonly class('privpass', 'tok123') {
+            public function __construct(private string $password, private string $token) {}
 
             public function getPassword(): string
             {

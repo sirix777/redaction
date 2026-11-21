@@ -6,7 +6,7 @@ A PHP library for data redaction, masking, and sanitization with optional Monolo
 
 This library provides a small core that can redact sensitive data in arrays and objects using pluggable rules. You can use it anywhere in your app (HTTP payloads, DTOs, database debug dumps, etc.), and optionally plug it into Monolog via a tiny bridge. For framework users, a PSR‑11 factory and a Mezzio/Laminas ConfigProvider are included.
 
-- PHP 8.2–8.5
+- PHP 8.3–8.6
 - Optional: `ext-intl` (for `UnicodeStartEndRule` only)
 - Optional: Monolog ^3.0 (for the bridge only)
 - Optional: Mezzio/Laminas (for auto‑wiring via ConfigProvider)
@@ -401,7 +401,7 @@ This repository includes a PHPUnit test suite and tooling configs.
 
 ## Versioning
 
-- PHP: ~8.2.0 || ~8.3.0 || ~8.4.0 || ~8.5.0
+- PHP: ~8.3.0 || ~8.4.0 || ~8.5.0 || ~8.6.0
 - Optional extension: `ext-intl` for `UnicodeStartEndRule`
 - Optional Monolog: ^3.0 (for the bridge)
 

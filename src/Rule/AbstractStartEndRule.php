@@ -17,7 +17,7 @@ use function substr;
 
 class AbstractStartEndRule
 {
-    private const DEFAULT_TEMPLATE = '%s';
+    private const string DEFAULT_TEMPLATE = '%s';
 
     public function __construct(private readonly int $visibleStart, private readonly int $visibleEnd)
     {
