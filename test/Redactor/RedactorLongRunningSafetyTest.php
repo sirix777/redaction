@@ -132,7 +132,7 @@ final class RedactorLongRunningSafetyTest extends TestCase
         $innerResult = null;
         $redactor    = null;
 
-        $reentrantRule = new class(static function() use (&$redactor, &$innerResult): void {
+        $reentrantRule = new readonly class(static function() use (&$redactor, &$innerResult): void {
             self::assertInstanceOf(Redactor::class, $redactor);
 
             $innerResult = $redactor->redact([
@@ -140,7 +140,7 @@ final class RedactorLongRunningSafetyTest extends TestCase
                 'other'  => 'other-secret',
             ]);
         }) implements RedactionRuleInterface {
-            public function __construct(private readonly Closure $callback) {}
+            public function __construct(private Closure $callback) {}
 
             public function apply(string $value, RedactionRuleContextInterface $redactionRuleContext): string
             {
@@ -201,12 +201,11 @@ final class RedactorLongRunningSafetyTest extends TestCase
             ->withMaxTotalNodes(1)
         ;
 
-        $this->assertSame('se****', $redactor->redact([
-            'secret' => 'secret',
-        ])['secret']);
-        $this->assertSame('se****', $redactor->redact([
-            'secret' => 'secret',
-        ])['secret']);
+        foreach ([1, 2] as $_) {
+            $this->assertSame('se****', $redactor->redact([
+                'secret' => 'secret',
+            ])['secret']);
+        }
     }
 
     public function testWithersDoNotMutateOriginalSharedInstance(): void
